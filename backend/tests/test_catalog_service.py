@@ -1,6 +1,7 @@
 import io
 
 import pytest
+from openpyxl import Workbook
 
 from app.services.catalog_service import CatalogImportError, CatalogService
 
@@ -49,3 +50,36 @@ def test_import_csv_invalid_publication_year():
 
     with pytest.raises(CatalogImportError, match="publication_year must be an integer"):
         CatalogService().import_csv(db, csv_file)
+
+
+def test_import_excel_upload_success():
+    db = FakeDb()
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.append(["title", "isbn", "classification_no", "author", "publisher", "publication_year", "summary"])
+    worksheet.append(["圖解資料視覺化", "9789860000016", "540.123", "王小明", "測試出版", 2024, "資料視覺化入門"])
+    file = io.BytesIO()
+    workbook.save(file)
+    file.seek(0)
+
+    imported_count = CatalogService().import_excel_upload(db, file, "sample.xlsx")
+
+    assert imported_count == 1
+    assert db.committed is True
+    assert db.items[0].title == "圖解資料視覺化"
+    assert db.items[0].publication_year == 2024
+    assert db.items[0].source_file == "sample.xlsx"
+
+
+def test_import_excel_upload_missing_required_column():
+    db = FakeDb()
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.append(["title", "isbn"])
+    worksheet.append(["圖解資料視覺化", "9789860000016"])
+    file = io.BytesIO()
+    workbook.save(file)
+    file.seek(0)
+
+    with pytest.raises(CatalogImportError, match="Missing required columns"):
+        CatalogService().import_excel_upload(db, file, "missing-columns.xlsx")

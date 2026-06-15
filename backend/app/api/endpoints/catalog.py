@@ -9,12 +9,9 @@ router = APIRouter()
 
 @router.post("/catalog/import")
 def import_catalog(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are supported now")
-
     service = CatalogService()
     try:
-        imported_count = service.import_csv_upload(db, file.file, file.filename)
+        imported_count = service.import_file_upload(db, file.file, file.filename)
     except CatalogImportError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
