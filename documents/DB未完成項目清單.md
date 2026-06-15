@@ -35,11 +35,12 @@
 
 ## 3. Alembic Migration
 
-- [ ] 初始化 Alembic 設定
-- [ ] 設定 Alembic 使用專案的 `DATABASE_URL`
-- [ ] 建立第一版 migration
-- [ ] 確認 migration 可以建立所有資料表
-- [ ] 補上 migration 執行方式說明
+- [x] 初始化 Alembic 設定
+- [x] 設定 Alembic 使用專案的 `DATABASE_URL`
+- [x] 建立第一版 migration
+- [x] 確認 migration 可以建立所有資料表
+- [x] 驗證 migration 可以 downgrade / upgrade
+- [x] 補上 migration 執行方式說明
 
 ## 4. 館藏 Excel / CSV 匯入
 
