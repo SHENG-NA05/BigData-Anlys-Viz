@@ -2,10 +2,11 @@ from datetime import datetime
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
-from app.api.endpoints.proposal import export_to_proposal, get_proposal
+from app.api.endpoints.proposal import export_to_proposal, get_proposal, update_proposal
 from app.db.models import CurationTheme, Proposal
-from app.schemas.proposal import ProposalExportRequest
+from app.schemas.proposal import ProposalExportRequest, ProposalUpdateRequest
 
 
 class FakeDb:
@@ -124,3 +125,57 @@ def test_get_proposal_returns_404_when_missing():
 
     assert exc_info.value.status_code == 404
     assert "Proposal not found" in exc_info.value.detail
+
+
+def test_update_proposal_updates_existing_draft():
+    proposal = Proposal(
+        proposal_id="P001",
+        theme_id="T001",
+        title="Old Title",
+        content="<h1>Old Title</h1>",
+        matched_books=None,
+        status="draft",
+        created_at=datetime(2026, 6, 16, 10, 0, 0),
+        updated_at=datetime(2026, 6, 16, 10, 5, 0),
+    )
+    db = FakeDb()
+    db.items.append(proposal)
+    request = ProposalUpdateRequest(
+        title="Updated Title",
+        content="<h1>Updated Title</h1><p>Updated body</p>",
+        status="completed",
+    )
+
+    response = update_proposal("P001", request, db=db)
+
+    assert db.committed is True
+    assert db.refreshed is True
+    assert proposal.title == "Updated Title"
+    assert proposal.content == "<h1>Updated Title</h1><p>Updated body</p>"
+    assert proposal.status == "completed"
+    assert response["status"] == "success"
+    assert response["data"]["proposal_id"] == "P001"
+    assert response["data"]["status"] == "completed"
+
+
+def test_update_proposal_returns_404_when_missing():
+    request = ProposalUpdateRequest(
+        title="Updated Title",
+        content="<h1>Updated Title</h1>",
+        status="completed",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        update_proposal("missing", request, db=FakeDb())
+
+    assert exc_info.value.status_code == 404
+    assert "Proposal not found" in exc_info.value.detail
+
+
+def test_update_proposal_rejects_invalid_status():
+    with pytest.raises(ValidationError):
+        ProposalUpdateRequest(
+            title="Updated Title",
+            content="<h1>Updated Title</h1>",
+            status="invalid",
+        )

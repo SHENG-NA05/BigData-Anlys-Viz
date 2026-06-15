@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -6,3 +8,9 @@ class ProposalExportRequest(BaseModel):
     title: str
     outline: str
     target_audience: str
+
+
+class ProposalUpdateRequest(BaseModel):
+    title: str
+    content: str
+    status: Literal["draft", "completed", "exported"]

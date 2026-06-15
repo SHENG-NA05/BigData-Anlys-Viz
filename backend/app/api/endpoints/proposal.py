@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import CurationTheme, Proposal
 from app.db.session import get_db
-from app.schemas.proposal import ProposalExportRequest
+from app.schemas.proposal import ProposalExportRequest, ProposalUpdateRequest
 
 router = APIRouter()
 
@@ -16,6 +16,33 @@ def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
     proposal = db.get(Proposal, proposal_id)
     if proposal is None:
         raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
+
+    return {
+        "status": "success",
+        "data": _proposal_to_response(proposal),
+    }
+
+
+@router.put("/proposals/{proposal_id}")
+def update_proposal(
+    proposal_id: str,
+    request: ProposalUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    proposal = db.get(Proposal, proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
+
+    proposal.title = request.title
+    proposal.content = request.content
+    proposal.status = request.status
+
+    try:
+        db.commit()
+        db.refresh(proposal)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update proposal") from exc
 
     return {
         "status": "success",
