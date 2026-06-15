@@ -1,0 +1,171 @@
+# DB 初始化與匯入驗證
+
+本文件記錄 PostgreSQL 實際初始化與館藏 CSV 匯入驗證流程。
+
+## 1. 目前資料庫設定
+
+後端預設連線字串：
+
+```text
+postgresql://postgres:postgres@localhost:5432/curation_db
+```
+
+如果本機帳號、密碼或資料庫位置不同，請先設定環境變數 `DATABASE_URL`。
+
+PowerShell 範例：
+
+```powershell
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/curation_db"
+```
+
+## 2. 前置條件
+
+本機需要先有可用的 PostgreSQL server。
+
+可以使用其中一種方式：
+
+- 安裝並啟動 Windows 版 PostgreSQL。
+- 啟動 Docker Desktop，並使用 PostgreSQL container。
+- 使用學校或雲端提供的 PostgreSQL，只要 `DATABASE_URL` 可連線即可。
+
+本次驗證使用 Docker 建立 PostgreSQL：
+
+```text
+container: bigdata-curation-postgres
+image: postgres:16
+port: 5432 -> 5432
+database: curation_db
+user: postgres
+password: postgres
+```
+
+## 3. 一鍵初始化與匯入驗證
+
+已新增腳本：
+
+```text
+backend/app/db/verify_catalog_import.py
+```
+
+執行：
+
+```bash
+python backend/app/db/verify_catalog_import.py --clear-catalog
+```
+
+這個腳本會依序執行：
+
+1. 連線到 PostgreSQL。
+2. 如果 `curation_db` 不存在，會自動建立。
+3. 執行 `init_db()` 建立資料表。
+4. 匯入 `data/fake_catalog_sample.csv`。
+5. 查詢 `catalog_books` 總筆數。
+
+成功時應看到類似輸出：
+
+```text
+database curation_db already exists
+imported_count=50
+catalog_books_total=50
+```
+
+如果第一次執行且資料庫不存在，可能會看到：
+
+```text
+created database curation_db
+imported_count=50
+catalog_books_total=50
+```
+
+## 4. 本次驗證結果
+
+已執行：
+
+```bash
+python backend/app/db/verify_catalog_import.py --clear-catalog
+```
+
+實際輸出：
+
+```text
+database curation_db already exists
+imported_count=50
+catalog_books_total=50
+```
+
+已確認 PostgreSQL 中存在以下資料表：
+
+```text
+catalog_books
+cost_benefit_logs
+curation_themes
+proposal_books
+proposals
+system_settings
+users
+```
+
+已確認資料筆數：
+
+```text
+catalog_books 50
+system_settings 3
+```
+
+已透過 FastAPI endpoint 驗證 CSV 上傳：
+
+```text
+POST /curation_management/backend/catalog/import
+status_code=200
+imported_count=50
+catalog_books_total=50
+```
+
+## 5. 使用其他 CSV
+
+如果要匯入其他虛擬資料：
+
+```bash
+python backend/app/db/generate_fake_catalog.py --count 5000 --output data/fake_catalog_5000.csv
+python backend/app/db/verify_catalog_import.py --csv data/fake_catalog_5000.csv --clear-catalog
+```
+
+## 6. 驗證重點
+
+執行成功後，代表以下項目通過：
+
+- PostgreSQL 可以連線。
+- `curation_db` 已建立。
+- DB tables 已建立。
+- `system_settings` 預設參數已寫入。
+- `catalog_books` 可以寫入館藏資料。
+- CSV 匯入服務可以實際寫入 PostgreSQL。
+
+## 7. 常見錯誤
+
+### PostgreSQL 未啟動
+
+錯誤：
+
+```text
+ERROR: Cannot connect to PostgreSQL. Make sure PostgreSQL is running and DATABASE_URL is correct.
+```
+
+處理方式：
+
+- 確認 PostgreSQL server 已啟動。
+- 確認 port 是 `5432`。
+- 確認 `DATABASE_URL` 的帳號與密碼正確。
+
+### CSV 檔案不存在
+
+錯誤：
+
+```text
+ERROR: CSV file not found
+```
+
+處理方式：
+
+- 確認 `data/fake_catalog_sample.csv` 存在。
+- 或用 `--csv` 指定正確檔案路徑。
