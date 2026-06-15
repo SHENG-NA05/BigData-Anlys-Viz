@@ -59,7 +59,7 @@
 
 - [x] `/catalog/import` 實際寫入 `catalog_books`
 - [ ] `/generate_themes` 寫入 `curation_themes`
-- [ ] `/history` 從 `curation_themes` 查詢歷史紀錄
+- [x] `/history` 從 `curation_themes` 查詢歷史紀錄
 - [ ] `/export_to_proposal` 建立 `proposals`
 - [ ] `/proposals/{proposal_id}` 查詢企劃書
 - [ ] `/proposals/{proposal_id}` 更新企劃書
@@ -108,7 +108,7 @@
 - [ ] 測試資料表初始化
 - [x] 測試館藏匯入成功案例
 - [x] 測試館藏匯入失敗案例
-- [ ] 測試歷史紀錄查詢
+- [x] 測試歷史紀錄查詢
 - [ ] 測試企劃書新增與更新
 - [ ] 測試儀表板統計 SQL
 
