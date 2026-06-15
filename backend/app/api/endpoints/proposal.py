@@ -11,6 +11,18 @@ from app.schemas.proposal import ProposalExportRequest
 router = APIRouter()
 
 
+@router.get("/proposals/{proposal_id}")
+def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
+    proposal = db.get(Proposal, proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
+
+    return {
+        "status": "success",
+        "data": _proposal_to_response(proposal),
+    }
+
+
 @router.post("/export_to_proposal")
 def export_to_proposal(request: ProposalExportRequest, db: Session = Depends(get_db)):
     theme = db.get(CurationTheme, request.theme_id)
@@ -51,3 +63,16 @@ def _build_proposal_content(request: ProposalExportRequest) -> str:
         f"<h2>Target Audience</h2><p>{request.target_audience}</p>"
         f"<h2>Curation Outline</h2><p>{request.outline}</p>"
     )
+
+
+def _proposal_to_response(proposal: Proposal) -> dict:
+    return {
+        "proposal_id": proposal.proposal_id,
+        "theme_id": proposal.theme_id,
+        "title": proposal.title,
+        "content": proposal.content,
+        "matched_books": proposal.matched_books,
+        "status": proposal.status,
+        "created_at": proposal.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        "updated_at": proposal.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+    }
