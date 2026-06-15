@@ -1,0 +1,22 @@
+.agents
+.antigravitycli
+skills-lock.json
+
+# Node modules
+node_modules/
+dist/
+.env
+
+# Python caching & venv
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
