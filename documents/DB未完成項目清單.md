@@ -61,7 +61,7 @@
 - [x] `/generate_themes` 寫入 `curation_themes`
 - [x] `/history` 從 `curation_themes` 查詢歷史紀錄
 - [x] `/export_to_proposal` 建立 `proposals`
-- [ ] `/proposals/{proposal_id}` 查詢企劃書
+- [x] `/proposals/{proposal_id}` 查詢企劃書
 - [ ] `/proposals/{proposal_id}` 更新企劃書
 - [ ] `/dashboard/stats` 從 `cost_benefit_logs` 聚合統計
 
