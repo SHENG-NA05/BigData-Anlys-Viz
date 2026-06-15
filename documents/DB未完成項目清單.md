@@ -63,7 +63,7 @@
 - [x] `/export_to_proposal` 建立 `proposals`
 - [x] `/proposals/{proposal_id}` 查詢企劃書
 - [x] `/proposals/{proposal_id}` 更新企劃書
-- [ ] `/dashboard/stats` 從 `cost_benefit_logs` 聚合統計
+- [x] `/dashboard/stats` 從 `cost_benefit_logs` 聚合統計
 
 ## 6. CRUD 層
 
@@ -76,12 +76,12 @@
 
 ## 7. 儀表板統計
 
-- [ ] 統計累計節省工時
-- [ ] 統計累計節省金額
-- [ ] 統計 AI 主題產生次數
-- [ ] 統計企劃書匯出次數
-- [ ] 統計每月節省工時與金額
-- [ ] 確認統計結果與 `dashboard/stats` API 格式一致
+- [x] 統計累計節省工時
+- [x] 統計累計節省金額
+- [x] 統計 AI 主題產生次數
+- [x] 統計企劃書匯出次數
+- [x] 統計每月節省工時與金額
+- [x] 確認統計結果與 `dashboard/stats` API 格式一致
 
 ## 8. 測試資料 Seed
 
@@ -111,7 +111,7 @@
 - [x] 測試歷史紀錄查詢
 - [x] 測試企劃書新增
 - [x] 測試企劃書更新
-- [ ] 測試儀表板統計 SQL
+- [x] 測試儀表板統計 SQL
 
 ## 11. 虛擬館藏資料
 
