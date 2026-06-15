@@ -52,6 +52,17 @@ def test_import_csv_invalid_publication_year():
         CatalogService().import_csv(db, csv_file)
 
 
+def test_import_csv_invalid_classification_no():
+    db = FakeDb()
+    csv_file = io.StringIO(
+        "title,isbn,classification_no,publication_year\n"
+        "圖解資料視覺化,9789860000016,not-a-class,2024\n"
+    )
+
+    with pytest.raises(CatalogImportError, match="classification_no must be 3 digits"):
+        CatalogService().import_csv(db, csv_file)
+
+
 def test_import_excel_upload_success():
     db = FakeDb()
     workbook = Workbook()
