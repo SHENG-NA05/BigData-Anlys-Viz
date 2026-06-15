@@ -1,4 +1,5 @@
 import csv
+import re
 from pathlib import Path
 from typing import BinaryIO, TextIO
 
@@ -16,6 +17,7 @@ OPTIONAL_COLUMNS = {
     "summary",
 }
 SUPPORTED_COLUMNS = REQUIRED_COLUMNS | OPTIONAL_COLUMNS
+CLASSIFICATION_NO_PATTERN = re.compile(r"^\d{3}(?:\.\d{1,3})?$")
 
 
 class CatalogImportError(ValueError):
@@ -113,6 +115,7 @@ class CatalogService:
             raise CatalogImportError("isbn is required")
         if not classification_no:
             raise CatalogImportError("classification_no is required")
+        _validate_classification_no(classification_no)
 
         publication_year = _parse_publication_year(normalized_row.get("publication_year"))
 
@@ -186,3 +189,11 @@ def _parse_publication_year(value: str | None) -> int | None:
     if year < 0:
         raise CatalogImportError(f"publication_year must be positive: {value}")
     return year
+
+
+def _validate_classification_no(value: str) -> None:
+    if not CLASSIFICATION_NO_PATTERN.match(value):
+        raise CatalogImportError(
+            "classification_no must be 3 digits with optional decimal digits, "
+            f"for example 540 or 540.123: {value}"
+        )
