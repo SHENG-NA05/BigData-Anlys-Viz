@@ -60,7 +60,7 @@
 - [x] `/catalog/import` 實際寫入 `catalog_books`
 - [x] `/generate_themes` 寫入 `curation_themes`
 - [x] `/history` 從 `curation_themes` 查詢歷史紀錄
-- [ ] `/export_to_proposal` 建立 `proposals`
+- [x] `/export_to_proposal` 建立 `proposals`
 - [ ] `/proposals/{proposal_id}` 查詢企劃書
 - [ ] `/proposals/{proposal_id}` 更新企劃書
 - [ ] `/dashboard/stats` 從 `cost_benefit_logs` 聚合統計
@@ -88,7 +88,7 @@
 - [ ] 建立測試用使用者
 - [x] 建立測試用館藏資料
 - [x] 建立測試用策展主題
-- [ ] 建立測試用企劃書
+- [x] 建立測試用企劃書
 - [ ] 建立測試用效益統計紀錄
 - [ ] 補上 seed data 執行方式
 
@@ -109,7 +109,8 @@
 - [x] 測試館藏匯入成功案例
 - [x] 測試館藏匯入失敗案例
 - [x] 測試歷史紀錄查詢
-- [ ] 測試企劃書新增與更新
+- [x] 測試企劃書新增
+- [ ] 測試企劃書更新
 - [ ] 測試儀表板統計 SQL
 
 ## 11. 虛擬館藏資料

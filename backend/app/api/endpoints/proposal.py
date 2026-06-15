@@ -1,7 +1,53 @@
-from fastapi import APIRouter
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.db.models import CurationTheme, Proposal
+from app.db.session import get_db
+from app.schemas.proposal import ProposalExportRequest
 
 router = APIRouter()
 
+
 @router.post("/export_to_proposal")
-def export_to_proposal():
-    return {"status": "success", "proposal_id": "P001", "message": "已成功建立企劃書草案"}
+def export_to_proposal(request: ProposalExportRequest, db: Session = Depends(get_db)):
+    theme = db.get(CurationTheme, request.theme_id)
+    if theme is None:
+        raise HTTPException(status_code=404, detail=f"Curation theme not found: {request.theme_id}")
+
+    proposal = Proposal(
+        proposal_id=_generate_proposal_id(),
+        theme_id=request.theme_id,
+        title=request.title,
+        content=_build_proposal_content(request),
+        matched_books=None,
+        status="draft",
+    )
+
+    try:
+        db.add(proposal)
+        db.commit()
+        db.refresh(proposal)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to create proposal") from exc
+
+    return {
+        "status": "success",
+        "proposal_id": proposal.proposal_id,
+        "message": "Proposal draft created successfully",
+    }
+
+
+def _generate_proposal_id() -> str:
+    return "P" + datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+
+def _build_proposal_content(request: ProposalExportRequest) -> str:
+    return (
+        f"<h1>{request.title}</h1>"
+        f"<h2>Target Audience</h2><p>{request.target_audience}</p>"
+        f"<h2>Curation Outline</h2><p>{request.outline}</p>"
+    )
