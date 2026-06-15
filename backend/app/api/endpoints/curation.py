@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -9,16 +11,30 @@ router = APIRouter()
 
 
 @router.post("/generate_themes")
-def generate_themes(request: CurationRequest):
+def generate_themes(request: CurationRequest, db: Session = Depends(get_db)):
     keyword = request.keywords[0] if request.keywords else "general reading"
+    theme = CurationTheme(
+        theme_id=_generate_theme_id(),
+        curation_type=request.curation_type,
+        title=f"Curation theme: {keyword}",
+        outline="A mock curation outline for integration testing.",
+        target_audience="General readers",
+        keywords=request.keywords,
+        prompt=request.prompt,
+        year=request.year,
+    )
+    db.add(theme)
+    db.commit()
+    db.refresh(theme)
+
     return {
         "status": "success",
         "data": [
             {
-                "theme_id": "T001",
-                "title": f"Curation theme: {keyword}",
-                "outline": "A mock curation outline for integration testing.",
-                "target_audience": "General readers",
+                "theme_id": theme.theme_id,
+                "title": theme.title,
+                "outline": theme.outline,
+                "target_audience": theme.target_audience,
             }
         ],
     }
@@ -55,3 +71,7 @@ def get_history(
             for theme in themes
         ],
     }
+
+
+def _generate_theme_id() -> str:
+    return "T" + datetime.now().strftime("%Y%m%d%H%M%S%f")
