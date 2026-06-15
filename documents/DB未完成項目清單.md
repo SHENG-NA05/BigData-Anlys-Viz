@@ -13,23 +13,25 @@
 
 ## 1. PostgreSQL 環境
 
-- [ ] 建立 PostgreSQL 資料庫 `curation_db`
-- [ ] 建立或確認資料庫使用者帳號
-- [ ] 設定資料庫密碼與權限
-- [ ] 確認 `DATABASE_URL` 可以連線到 PostgreSQL
+- [x] 建立 PostgreSQL 資料庫 `curation_db`
+- [x] 建立或確認資料庫使用者帳號
+- [x] 設定資料庫密碼與權限
+- [x] 確認 `DATABASE_URL` 可以連線到 PostgreSQL
 - [ ] 補上 `.env` 設定範例或使用說明
 
 ## 2. 資料表初始化
 
-- [ ] 執行 `backend/app/db/init_db.py`
-- [ ] 確認 PostgreSQL 中已建立 `users`
-- [ ] 確認 PostgreSQL 中已建立 `catalog_books`
-- [ ] 確認 PostgreSQL 中已建立 `curation_themes`
-- [ ] 確認 PostgreSQL 中已建立 `proposals`
-- [ ] 確認 PostgreSQL 中已建立 `proposal_books`
-- [ ] 確認 PostgreSQL 中已建立 `cost_benefit_logs`
-- [ ] 確認 PostgreSQL 中已建立 `system_settings`
-- [ ] 確認 `system_settings` 已寫入預設參數
+- [x] 補上 DB 初始化與匯入驗證腳本
+- [x] 補上 DB 初始化與匯入驗證說明文件
+- [x] 執行 `backend/app/db/init_db.py`
+- [x] 確認 PostgreSQL 中已建立 `users`
+- [x] 確認 PostgreSQL 中已建立 `catalog_books`
+- [x] 確認 PostgreSQL 中已建立 `curation_themes`
+- [x] 確認 PostgreSQL 中已建立 `proposals`
+- [x] 確認 PostgreSQL 中已建立 `proposal_books`
+- [x] 確認 PostgreSQL 中已建立 `cost_benefit_logs`
+- [x] 確認 PostgreSQL 中已建立 `system_settings`
+- [x] 確認 `system_settings` 已寫入預設參數
 
 ## 3. Alembic Migration
 
@@ -116,8 +118,8 @@
 - [x] 建立虛擬館藏資料生成設計文件
 - [x] 產生 sample CSV 測試資料
 - [ ] 決定正式展示資料筆數
-- [ ] 將虛擬館藏資料匯入 PostgreSQL
-- [ ] 確認 `catalog_books` 查詢結果正常
+- [x] 將虛擬館藏資料匯入 PostgreSQL
+- [x] 確認 `catalog_books` 查詢結果正常
 - [ ] 使用虛擬館藏測試 AI 館藏匹配
 
 ## 建議下一步
