@@ -62,7 +62,7 @@
 - [x] `/history` 從 `curation_themes` 查詢歷史紀錄
 - [x] `/export_to_proposal` 建立 `proposals`
 - [x] `/proposals/{proposal_id}` 查詢企劃書
-- [ ] `/proposals/{proposal_id}` 更新企劃書
+- [x] `/proposals/{proposal_id}` 更新企劃書
 - [ ] `/dashboard/stats` 從 `cost_benefit_logs` 聚合統計
 
 ## 6. CRUD 層
@@ -110,7 +110,7 @@
 - [x] 測試館藏匯入失敗案例
 - [x] 測試歷史紀錄查詢
 - [x] 測試企劃書新增
-- [ ] 測試企劃書更新
+- [x] 測試企劃書更新
 - [ ] 測試儀表板統計 SQL
 
 ## 11. 虛擬館藏資料
