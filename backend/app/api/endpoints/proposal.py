@@ -10,6 +10,7 @@ from app.crud.proposal import update_proposal as update_proposal_record
 from app.db.models import Proposal
 from app.db.session import get_db
 from app.schemas.proposal import ProposalExportRequest, ProposalUpdateRequest
+from app.services.catalog_match_service import match_catalog_books
 
 router = APIRouter()
 
@@ -59,7 +60,7 @@ def export_to_proposal(request: ProposalExportRequest, db: Session = Depends(get
         theme_id=request.theme_id,
         title=request.title,
         content=_build_proposal_content(request),
-        matched_books=None,
+        matched_books=match_catalog_books(db, _build_match_keywords(theme, request)),
         status="draft",
     )
 
@@ -86,6 +87,16 @@ def _build_proposal_content(request: ProposalExportRequest) -> str:
         f"<h2>Target Audience</h2><p>{request.target_audience}</p>"
         f"<h2>Curation Outline</h2><p>{request.outline}</p>"
     )
+
+
+def _build_match_keywords(theme, request: ProposalExportRequest) -> list[str]:
+    return [
+        *(theme.keywords or []),
+        theme.title,
+        request.title,
+        request.outline,
+        request.target_audience,
+    ]
 
 
 def _proposal_to_response(proposal: Proposal) -> dict:

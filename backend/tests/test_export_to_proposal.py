@@ -5,13 +5,32 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.api.endpoints.proposal import export_to_proposal, get_proposal, update_proposal
-from app.db.models import CurationTheme, Proposal
+from app.db.models import CatalogBook, CurationTheme, Proposal
 from app.schemas.proposal import ProposalExportRequest, ProposalUpdateRequest
 
 
+class FakeCatalogQuery:
+    def __init__(self, books):
+        self.books = books
+
+    def order_by(self, *args):
+        return self
+
+    def offset(self, value):
+        return self
+
+    def limit(self, value):
+        self.books = self.books[:value]
+        return self
+
+    def all(self):
+        return self.books
+
+
 class FakeDb:
-    def __init__(self, theme=None):
+    def __init__(self, theme=None, catalog_books=None):
         self.theme = theme
+        self.catalog_books = catalog_books or []
         self.items = []
         self.committed = False
         self.refreshed = False
@@ -23,6 +42,11 @@ class FakeDb:
         if model is Proposal and self.items:
             return next((item for item in self.items if item.proposal_id == key), None)
         return None
+
+    def query(self, model):
+        if model is CatalogBook:
+            return FakeCatalogQuery(self.catalog_books)
+        raise AssertionError(f"Unexpected query model: {model}")
 
     def add(self, item):
         self.items.append(item)
@@ -68,12 +92,52 @@ def test_export_to_proposal_creates_proposal_record():
     assert proposal.theme_id == "T001"
     assert proposal.title == "AI Reading Future"
     assert proposal.status == "draft"
+    assert proposal.matched_books == []
     assert "Plan a curation area for AI literacy books." in proposal.content
     assert response == {
         "status": "success",
         "proposal_id": proposal.proposal_id,
         "message": "Proposal draft created successfully",
     }
+
+
+def test_export_to_proposal_stores_matched_catalog_books():
+    theme = CurationTheme(
+        theme_id="T001",
+        curation_type="trend",
+        title="AI Reading Future",
+        outline="AI outline",
+        target_audience="General readers",
+        keywords=["AI", "資料"],
+    )
+    book = CatalogBook(
+        id=10,
+        title="AI 時代的資料素養",
+        isbn="9789860000016",
+        author="資料策展小組",
+        publisher="智慧圖書出版",
+        publication_year=2026,
+        classification_no="540.123",
+        summary="介紹人工智慧、資料分析與圖書館應用。",
+    )
+    db = FakeDb(theme=theme, catalog_books=[book])
+
+    export_to_proposal(make_request(), db=db)
+
+    proposal = db.items[0]
+    assert proposal.matched_books == [
+        {
+            "book_id": 10,
+            "title": "AI 時代的資料素養",
+            "isbn": "9789860000016",
+            "author": "資料策展小組",
+            "publisher": "智慧圖書出版",
+            "publication_year": 2026,
+            "classification_no": "540.123",
+            "match_score": 12.0,
+            "match_reason": "ai: title, classification; 資料: title, summary, author, classification",
+        }
+    ]
 
 
 def test_export_to_proposal_returns_404_when_theme_missing():
