@@ -58,7 +58,7 @@
 ## 5. API 串接 DB
 
 - [x] `/catalog/import` 實際寫入 `catalog_books`
-- [ ] `/generate_themes` 寫入 `curation_themes`
+- [x] `/generate_themes` 寫入 `curation_themes`
 - [x] `/history` 從 `curation_themes` 查詢歷史紀錄
 - [ ] `/export_to_proposal` 建立 `proposals`
 - [ ] `/proposals/{proposal_id}` 查詢企劃書
@@ -87,7 +87,7 @@
 
 - [ ] 建立測試用使用者
 - [x] 建立測試用館藏資料
-- [ ] 建立測試用策展主題
+- [x] 建立測試用策展主題
 - [ ] 建立測試用企劃書
 - [ ] 建立測試用效益統計紀錄
 - [ ] 補上 seed data 執行方式
