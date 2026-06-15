@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import CostBenefitLog
+from app.crud.cost_benefit import get_action_counts, get_cost_benefit_totals, get_monthly_cost_benefit_stats
 from app.db.session import get_db
 
 router = APIRouter()
@@ -10,27 +9,9 @@ router = APIRouter()
 
 @router.get("/dashboard/stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    totals = db.query(
-        func.coalesce(func.sum(CostBenefitLog.time_saved_hours), 0),
-        func.coalesce(func.sum(CostBenefitLog.cost_saved_amount), 0),
-    ).one()
-
-    action_counts = dict(
-        db.query(CostBenefitLog.action, func.count(CostBenefitLog.log_id))
-        .group_by(CostBenefitLog.action)
-        .all()
-    )
-
-    monthly_rows = (
-        db.query(
-            func.to_char(func.date_trunc("month", CostBenefitLog.timestamp), "YYYY-MM").label("month"),
-            func.coalesce(func.sum(CostBenefitLog.time_saved_hours), 0).label("hours"),
-            func.coalesce(func.sum(CostBenefitLog.cost_saved_amount), 0).label("cost"),
-        )
-        .group_by(func.date_trunc("month", CostBenefitLog.timestamp))
-        .order_by(func.date_trunc("month", CostBenefitLog.timestamp))
-        .all()
-    )
+    totals = get_cost_benefit_totals(db)
+    action_counts = get_action_counts(db)
+    monthly_rows = get_monthly_cost_benefit_stats(db)
 
     return {
         "cumulative_hours_saved": float(totals[0]),

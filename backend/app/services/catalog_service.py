@@ -6,6 +6,7 @@ from typing import BinaryIO, TextIO
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
+from app.crud.catalog import create_catalog_books
 from app.db.models import CatalogBook
 
 
@@ -90,9 +91,7 @@ class CatalogService:
         if not books:
             raise CatalogImportError(empty_message)
 
-        db.add_all(books)
-        db.commit()
-        return len(books)
+        return create_catalog_books(db, books)
 
     def _validate_headers(self, fieldnames: list[str] | None) -> None:
         if not fieldnames:

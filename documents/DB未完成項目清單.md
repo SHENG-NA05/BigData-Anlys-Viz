@@ -67,12 +67,12 @@
 
 ## 6. CRUD 層
 
-- [ ] 建立 `backend/app/crud/` 目錄
-- [ ] 實作館藏 CRUD
-- [ ] 實作策展主題 CRUD
-- [ ] 實作企劃書 CRUD
-- [ ] 實作效益統計 CRUD
-- [ ] 實作系統參數 CRUD
+- [x] 建立 `backend/app/crud/` 目錄
+- [x] 實作館藏 CRUD
+- [x] 實作策展主題 CRUD
+- [x] 實作企劃書 CRUD
+- [x] 實作效益統計 CRUD
+- [x] 實作系統參數 CRUD
 
 ## 7. 儀表板統計
 
