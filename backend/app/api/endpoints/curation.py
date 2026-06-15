@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.crud.curation import create_curation_theme, list_curation_themes
 from app.db.models import CurationTheme
 from app.db.session import get_db
 from app.schemas.curation import CurationRequest
@@ -23,9 +24,7 @@ def generate_themes(request: CurationRequest, db: Session = Depends(get_db)):
         prompt=request.prompt,
         year=request.year,
     )
-    db.add(theme)
-    db.commit()
-    db.refresh(theme)
+    create_curation_theme(db, theme)
 
     return {
         "status": "success",
@@ -47,17 +46,7 @@ def get_history(
     curation_type: str | None = None,
     db: Session = Depends(get_db),
 ):
-    query = db.query(CurationTheme)
-    if curation_type:
-        query = query.filter(CurationTheme.curation_type == curation_type)
-
-    total = query.count()
-    themes = (
-        query.order_by(CurationTheme.created_at.desc())
-        .offset((cur_page - 1) * size)
-        .limit(size)
-        .all()
-    )
+    total, themes = list_curation_themes(db, cur_page=cur_page, size=size, curation_type=curation_type)
 
     return {
         "total": total,

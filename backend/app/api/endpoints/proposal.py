@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.db.models import CurationTheme, Proposal
+from app.crud.curation import get_curation_theme
+from app.crud.proposal import create_proposal, get_proposal as get_proposal_record
+from app.crud.proposal import update_proposal as update_proposal_record
+from app.db.models import Proposal
 from app.db.session import get_db
 from app.schemas.proposal import ProposalExportRequest, ProposalUpdateRequest
 
@@ -13,7 +16,7 @@ router = APIRouter()
 
 @router.get("/proposals/{proposal_id}")
 def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
-    proposal = db.get(Proposal, proposal_id)
+    proposal = get_proposal_record(db, proposal_id)
     if proposal is None:
         raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
 
@@ -29,17 +32,12 @@ def update_proposal(
     request: ProposalUpdateRequest,
     db: Session = Depends(get_db),
 ):
-    proposal = db.get(Proposal, proposal_id)
+    proposal = get_proposal_record(db, proposal_id)
     if proposal is None:
         raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
 
-    proposal.title = request.title
-    proposal.content = request.content
-    proposal.status = request.status
-
     try:
-        db.commit()
-        db.refresh(proposal)
+        update_proposal_record(db, proposal, request.title, request.content, request.status)
     except SQLAlchemyError as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update proposal") from exc
@@ -52,7 +50,7 @@ def update_proposal(
 
 @router.post("/export_to_proposal")
 def export_to_proposal(request: ProposalExportRequest, db: Session = Depends(get_db)):
-    theme = db.get(CurationTheme, request.theme_id)
+    theme = get_curation_theme(db, request.theme_id)
     if theme is None:
         raise HTTPException(status_code=404, detail=f"Curation theme not found: {request.theme_id}")
 
@@ -66,9 +64,7 @@ def export_to_proposal(request: ProposalExportRequest, db: Session = Depends(get
     )
 
     try:
-        db.add(proposal)
-        db.commit()
-        db.refresh(proposal)
+        create_proposal(db, proposal)
     except SQLAlchemyError as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create proposal") from exc
