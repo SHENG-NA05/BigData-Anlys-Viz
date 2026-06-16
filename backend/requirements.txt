@@ -8,7 +8,7 @@ pandas>=2.0.0
 openpyxl>=3.1.0
 python-docx>=0.8.11
 reportlab>=4.0.0
-google-generativeai>=0.1.0
+google-genai
 pytest>=7.3.0
 python-multipart>=0.0.9
 python-dotenv>=1.0.0

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from app.api.endpoints.curation import generate_themes
 from app.schemas.curation import CurationRequest
 
@@ -18,7 +20,16 @@ class FakeDb:
         self.refreshed = True
 
 
-def test_generate_themes_creates_curation_theme_record():
+@patch("app.api.endpoints.curation._ai_service.generate_themes")
+def test_generate_themes_creates_curation_theme_record(mock_generate):
+    mock_generate.return_value = [
+        {
+            "title": "Curation theme: AI",
+            "outline": "A mock curation outline for integration testing.",
+            "target_audience": "General readers",
+        }
+    ]
+
     db = FakeDb()
     request = CurationRequest(
         curation_type="trend",
@@ -56,7 +67,16 @@ def test_generate_themes_creates_curation_theme_record():
     }
 
 
-def test_generate_themes_uses_default_keyword_when_empty():
+@patch("app.api.endpoints.curation._ai_service.generate_themes")
+def test_generate_themes_uses_default_keyword_when_empty(mock_generate):
+    mock_generate.return_value = [
+        {
+            "title": "Curation theme: general reading",
+            "outline": "outline",
+            "target_audience": "audience",
+        }
+    ]
+
     db = FakeDb()
     request = CurationRequest(curation_type="custom", keywords=[])
 
@@ -64,3 +84,9 @@ def test_generate_themes_uses_default_keyword_when_empty():
 
     assert db.items[0].title == "Curation theme: general reading"
     assert response["data"][0]["title"] == "Curation theme: general reading"
+    mock_generate.assert_called_once_with(
+        curation_type="custom",
+        keywords=[],
+        prompt=None,
+        year=2026,
+    )

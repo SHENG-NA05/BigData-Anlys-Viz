@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from unittest.mock import patch
+
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -70,7 +72,9 @@ def make_request():
     )
 
 
-def test_export_to_proposal_creates_proposal_record():
+@patch("app.api.endpoints.proposal._ai_service.expand_proposal")
+def test_export_to_proposal_creates_proposal_record(mock_expand):
+    mock_expand.return_value = "<h1>AI Reading Future</h1><p>Plan a curation area for AI literacy books.</p>"
     theme = CurationTheme(
         theme_id="T001",
         curation_type="trend",
@@ -97,11 +101,14 @@ def test_export_to_proposal_creates_proposal_record():
     assert response == {
         "status": "success",
         "proposal_id": proposal.proposal_id,
-        "message": "Proposal draft created successfully",
+        "message": "已成功建立企劃書草案，請至企劃管理中心編輯。",
     }
 
 
-def test_export_to_proposal_stores_matched_catalog_books():
+@patch("app.api.endpoints.proposal._ai_service.expand_proposal")
+def test_export_to_proposal_stores_matched_catalog_books(mock_expand, mock_expand_for_other=None):
+    # Depending on python mock decorators, the first argument is mock_expand.
+    mock_expand.return_value = "<h1>AI Reading Future</h1><p>Plan a curation area for AI literacy books.</p>"
     theme = CurationTheme(
         theme_id="T001",
         curation_type="trend",
