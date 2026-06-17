@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Text, func, JSON
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
@@ -31,8 +31,10 @@ class CatalogBook(Base):
     publication_year = Column(Integer, nullable=True)
     classification_no = Column(String(100), nullable=False, index=True)
     summary = Column(Text, nullable=True)
+    embedding = Column(JSON, nullable=True)
     source_file = Column(String(255), nullable=True)
     imported_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 
     proposal_books = relationship("ProposalBook", back_populates="catalog_book")
 

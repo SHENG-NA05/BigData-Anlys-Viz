@@ -94,3 +94,24 @@ def test_import_excel_upload_missing_required_column():
 
     with pytest.raises(CatalogImportError, match="Missing required columns"):
         CatalogService().import_excel_upload(db, file, "missing-columns.xlsx")
+
+
+from unittest.mock import patch
+
+@patch("app.services.ai_service.AIService.get_embeddings_batch")
+def test_import_csv_generates_embeddings(mock_get_embeddings):
+    mock_get_embeddings.return_value = [[0.1] * 768]
+    db = FakeDb()
+    csv_file = io.StringIO(
+        "title,isbn,classification_no,author,publisher,publication_year,summary\n"
+        "圖解資料視覺化,9789860000016,540.123,王小明,測試出版,2024,資料視覺化入門\n"
+    )
+
+    imported_count = CatalogService().import_csv(db, csv_file, source_file="sample.csv")
+
+    assert imported_count == 1
+    assert db.committed is True
+    assert db.items[0].title == "圖解資料視覺化"
+    assert db.items[0].embedding == [0.1] * 768
+    mock_get_embeddings.assert_called_once_with(["圖解資料視覺化 資料視覺化入門"])
+

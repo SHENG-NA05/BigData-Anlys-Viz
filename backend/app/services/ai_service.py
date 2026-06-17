@@ -349,6 +349,35 @@ class AIService:
         """
         return self.get_embedding(text)
 
+    def get_embeddings_batch(self, texts: list[str]) -> list[list[float] | None]:
+        """
+        批次取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        返回與輸入文字列表對應的向量列表，若失敗則對應項為 None。
+        """
+        if not texts:
+            return []
+
+        try:
+            self._init_provider()
+        except Exception:
+            return [None] * len(texts)
+
+        if self._use_openrouter or self._client is None:
+            return [None] * len(texts)
+
+        try:
+            response = self._client.models.embed_content(
+                model="text-embedding-004",
+                contents=[(t.strip() if t else " ") for t in texts]
+            )
+            if response.embeddings:
+                return [emb.values for emb in response.embeddings]
+        except Exception as exc:
+            logger.warning("批次取得語意向量失敗：%s", str(exc))
+
+        return [None] * len(texts)
+
+
 
     # ------------------------------------------------------------------
     # 工具方法：解析 JSON 回應

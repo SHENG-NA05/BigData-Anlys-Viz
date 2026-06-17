@@ -91,6 +91,19 @@ class CatalogService:
         if not books:
             raise CatalogImportError(empty_message)
 
+        # 協同 AI 批次生成向量
+        try:
+            from app.services.ai_service import AIService
+            ai_service = AIService()
+            texts = [f"{book.title} {book.summary or ''}" for book in books]
+            embeddings = ai_service.get_embeddings_batch(texts)
+            for book, emb in zip(books, embeddings):
+                if emb:
+                    book.embedding = emb
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("批次生成館藏向量失敗，降級儲存：%s", str(exc))
+
         return create_catalog_books(db, books)
 
     def _validate_headers(self, fieldnames: list[str] | None) -> None:
