@@ -8,11 +8,14 @@ from app.db.models import CurationTheme
 from app.db.session import get_db
 from app.schemas.curation import CurationRequest
 from app.services.ai_service import AIService, AIServiceError
+from app.services.rss_service import RSSService
 
 router = APIRouter()
 
-# 共用 AI 服務實例（延遲初始化 Gemini 模型）
+# 共用服務實例
 _ai_service = AIService()
+_rss_service = RSSService()
+
 
 
 @router.post("/generate_themes")
@@ -54,10 +57,29 @@ def generate_themes(request: CurationRequest, db: Session = Depends(get_db)):
             "target_audience": theme.target_audience,
         })
 
+    # 紀錄效益日誌 (每次點擊發想生成：省下 2.0 小時)
+    try:
+        from app.db.models import CostBenefitLog, SystemSetting
+        rate_setting = db.query(SystemSetting).filter(SystemSetting.setting_key == "hourly_rate").first()
+        hourly_rate = float(rate_setting.setting_value) if rate_setting else 200.0
+        target_id = saved_themes[0]["theme_id"] if saved_themes else None
+        log = CostBenefitLog(
+            action="theme_generation",
+            target_id=target_id,
+            time_saved_hours=2.0,
+            cost_saved_amount=2.0 * hourly_rate,
+        )
+        db.add(log)
+        db.commit()
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("記錄效益日誌失敗：%s", str(exc))
+
     return {
         "status": "success",
         "data": saved_themes,
     }
+
 
 
 @router.get("/history")
@@ -83,5 +105,18 @@ def get_history(
     }
 
 
+@router.get("/rss/trends")
+def get_rss_trends():
+    """
+    時事熱門話題抓取
+    """
+    keywords = _rss_service.get_trending_keywords()
+    return {
+        "status": "success",
+        "data": keywords
+    }
+
+
 def _generate_theme_id() -> str:
     return "T" + datetime.now().strftime("%Y%m%d%H%M%S%f")
+

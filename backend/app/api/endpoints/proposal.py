@@ -148,3 +148,327 @@ def _proposal_to_response(proposal: Proposal) -> dict:
         "created_at": proposal.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         "updated_at": proposal.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
     }
+
+
+# ---------------------------------------------------------------------------
+# C-4: Word & PDF 檔案產生與匯出功能
+# ---------------------------------------------------------------------------
+import io
+from fastapi import Query
+from fastapi.responses import StreamingResponse
+from urllib.parse import quote
+from docx import Document
+from html.parser import HTMLParser
+
+
+class DocxHTMLParser(HTMLParser):
+    def __init__(self, document):
+        super().__init__()
+        self.doc = document
+        self.current_tag = None
+        self.list_level = 0
+        self.para = None
+        self.table_data = []
+
+    def handle_starttag(self, tag, attrs):
+        self.current_tag = tag
+        if tag == 'h1':
+            self.para = None
+        elif tag == 'h2':
+            self.para = None
+        elif tag == 'p':
+            self.para = self.doc.add_paragraph()
+        elif tag == 'ul' or tag == 'ol':
+            self.list_level += 1
+        elif tag == 'li':
+            self.para = self.doc.add_paragraph(style='List Bullet')
+        elif tag == 'table':
+            self.table_data = []
+        elif tag == 'tr':
+            self.table_data.append([])
+
+    def handle_endtag(self, tag):
+        if tag in ('ul', 'ol'):
+            self.list_level = max(0, self.list_level - 1)
+        elif tag == 'table':
+            if self.table_data:
+                rows_count = len(self.table_data)
+                cols_count = max(len(r) for r in self.table_data) if rows_count > 0 else 0
+                if cols_count > 0:
+                    tbl = self.doc.add_table(rows=rows_count, cols=cols_count)
+                    tbl.style = 'Table Grid'
+                    for r_idx, row in enumerate(self.table_data):
+                        for c_idx, val in enumerate(row):
+                            if c_idx < cols_count:
+                                tbl.cell(r_idx, c_idx).text = val
+            self.table_data = []
+        self.current_tag = None
+
+    def handle_data(self, data):
+        text = data.strip()
+        if not text:
+            return
+        if self.current_tag == 'h1':
+            self.doc.add_heading(text, level=1)
+        elif self.current_tag == 'h2':
+            self.doc.add_heading(text, level=2)
+        elif self.current_tag in ('p', 'li'):
+            if self.para:
+                self.para.add_run(text)
+        elif self.current_tag in ('td', 'th'):
+            if self.table_data:
+                self.table_data[-1].append(text)
+        elif not self.current_tag:
+            self.doc.add_paragraph(text)
+
+
+def generate_docx(proposal: Proposal) -> bytes:
+    doc = Document()
+    doc.add_heading(proposal.title, level=0)
+
+    parser = DocxHTMLParser(doc)
+    parser.feed(proposal.content)
+
+    if proposal.matched_books:
+        doc.add_heading("推薦匹配館藏圖書", level=1)
+        tbl = doc.add_table(rows=1, cols=4)
+        tbl.style = 'Table Grid'
+        hdr_cells = tbl.rows[0].cells
+        hdr_cells[0].text = '書名'
+        hdr_cells[1].text = '作者'
+        hdr_cells[2].text = 'ISBN'
+        hdr_cells[3].text = '分類號'
+        for book in proposal.matched_books:
+            row_cells = tbl.add_row().cells
+            row_cells[0].text = str(book.get("title", ""))
+            row_cells[1].text = str(book.get("author", ""))
+            row_cells[2].text = str(book.get("isbn", ""))
+            row_cells[3].text = str(book.get("classification_no", ""))
+
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    return file_stream.getvalue()
+
+
+# PDF Generation Helpers
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+import os
+
+
+def register_chinese_font():
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    font_paths = [
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyh.ttf",
+        "C:/Windows/Fonts/simsun.ttc",
+        "C:/Windows/Fonts/simsun.ttf",
+    ]
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont("ChineseFont", path))
+                return "ChineseFont"
+            except Exception:
+                continue
+    return "Helvetica"
+
+
+class PDFHTMLParser(HTMLParser):
+    def __init__(self, font_name, h1_style, h2_style, body_style):
+        super().__init__()
+        self.font_name = font_name
+        self.h1_style = h1_style
+        self.h2_style = h2_style
+        self.body_style = body_style
+        self.story = []
+        self.current_tag = None
+        self.para_text = ""
+        self.table_data = []
+
+    def handle_starttag(self, tag, attrs):
+        self.current_tag = tag
+        if tag in ('h1', 'h2', 'p', 'li'):
+            self.para_text = ""
+        elif tag == 'table':
+            self.table_data = []
+        elif tag == 'tr':
+            self.table_data.append([])
+
+    def handle_endtag(self, tag):
+        if tag == 'h1':
+            self.story.append(Paragraph(self.para_text, self.h1_style))
+            self.story.append(Spacer(1, 5))
+        elif tag == 'h2':
+            self.story.append(Paragraph(self.para_text, self.h2_style))
+            self.story.append(Spacer(1, 4))
+        elif tag in ('p', 'li'):
+            prefix = "• " if tag == 'li' else ""
+            self.story.append(Paragraph(prefix + self.para_text, self.body_style))
+        elif tag == 'table':
+            if self.table_data:
+                formatted_data = []
+                for row in self.table_data:
+                    formatted_row = []
+                    for cell in row:
+                        formatted_row.append(Paragraph(cell, self.body_style))
+                    formatted_data.append(formatted_row)
+
+                t = Table(formatted_data)
+                t.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                    ('TOPPADDING', (0,0), (-1,-1), 6),
+                    ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.whitesmoke]),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ]))
+                self.story.append(t)
+                self.story.append(Spacer(1, 10))
+        self.current_tag = None
+
+    def handle_data(self, data):
+        text = data.strip()
+        if not text:
+            return
+        if self.current_tag in ('h1', 'h2', 'p', 'li'):
+            self.para_text += text
+        elif self.current_tag in ('td', 'th'):
+            if self.table_data:
+                self.table_data[-1].append(text)
+        elif not self.current_tag:
+            self.story.append(Paragraph(text, self.body_style))
+
+
+def generate_pdf(proposal: Proposal) -> bytes:
+    font_name = register_chinese_font()
+    file_stream = io.BytesIO()
+    doc = SimpleDocTemplate(file_stream, pagesize=A4)
+    story = []
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=24,
+        leading=28,
+        spaceAfter=15,
+        alignment=1
+    )
+    h1_style = ParagraphStyle(
+        'DocH1',
+        parent=styles['Heading1'],
+        fontName=font_name,
+        fontSize=18,
+        leading=22,
+        spaceBefore=15,
+        spaceAfter=10
+    )
+    h2_style = ParagraphStyle(
+        'DocH2',
+        parent=styles['Heading2'],
+        fontName=font_name,
+        fontSize=14,
+        leading=18,
+        spaceBefore=10,
+        spaceAfter=6
+    )
+    body_style = ParagraphStyle(
+        'DocBody',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=10,
+        leading=14,
+        spaceAfter=8
+    )
+
+    story.append(Paragraph(proposal.title, title_style))
+    story.append(Spacer(1, 10))
+
+    parser = PDFHTMLParser(font_name, h1_style, h2_style, body_style)
+    parser.feed(proposal.content)
+    story.extend(parser.story)
+
+    if proposal.matched_books:
+        story.append(Spacer(1, 15))
+        story.append(Paragraph("推薦匹配館藏圖書", h1_style))
+        story.append(Spacer(1, 5))
+
+        table_rows = [[
+            Paragraph("<b>書名</b>", body_style),
+            Paragraph("<b>作者</b>", body_style),
+            Paragraph("<b>ISBN</b>", body_style),
+            Paragraph("<b>分類號</b>", body_style)
+        ]]
+        for book in proposal.matched_books:
+            table_rows.append([
+                Paragraph(str(book.get("title", "")), body_style),
+                Paragraph(str(book.get("author", "")), body_style),
+                Paragraph(str(book.get("isbn", "")), body_style),
+                Paragraph(str(book.get("classification_no", "")), body_style)
+            ])
+
+        t = Table(table_rows)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('TOPPADDING', (0,0), (-1,-1), 5),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ]))
+        story.append(t)
+
+    doc.build(story)
+    return file_stream.getvalue()
+
+
+@router.get("/proposals/{proposal_id}/export")
+def export_proposal(
+    proposal_id: str,
+    format: str = Query("docx", pattern="^(docx|pdf)$"),
+    db: Session = Depends(get_db)
+):
+    proposal = get_proposal_record(db, proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
+
+    # 紀錄效益日誌 (每次匯出：省下 12.0 小時)
+    try:
+        from app.db.models import CostBenefitLog, SystemSetting
+        rate_setting = db.query(SystemSetting).filter(SystemSetting.setting_key == "hourly_rate").first()
+        hourly_rate = float(rate_setting.setting_value) if rate_setting else 200.0
+
+        log = CostBenefitLog(
+            action="proposal_export",
+            target_id=proposal_id,
+            time_saved_hours=12.0,
+            cost_saved_amount=12.0 * hourly_rate,
+        )
+        db.add(log)
+        db.commit()
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("記錄匯出效益日誌失敗：%s", str(exc))
+
+    if format == "docx":
+        content = generate_docx(proposal)
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        filename = f"{proposal.title}.docx"
+    else:
+        content = generate_pdf(proposal)
+        media_type = "application/pdf"
+        filename = f"{proposal.title}.pdf"
+
+    encoded_filename = quote(filename)
+    headers = {
+        "Access-Control-Expose-Headers": "Content-Disposition",
+        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+    }
+
+    return StreamingResponse(io.BytesIO(content), media_type=media_type, headers=headers)
+
