@@ -1,0 +1,36 @@
+.catalog-import {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.import-guide {
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.import-guide h4 {
+  font-weight: 600;
+  color: #222;
+  margin-top: 12px;
+}
+
+.import-guide ul,
+.import-guide ol {
+  margin-left: 20px;
+  margin-bottom: 12px;
+}
+
+.import-guide li {
+  margin-bottom: 8px;
+  color: #555;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
