@@ -39,3 +39,32 @@ def test_rss_service_fallback_on_exception():
     with patch("httpx.get", side_effect=Exception("Connection error")):
         keywords = service.get_trending_keywords()
         assert keywords == FALLBACK_KEYWORDS
+
+def test_rss_service_missing_channel():
+    service = RSSService()
+    mock_response_content = b'<rss></rss>'
+    with patch("httpx.get") as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.content = mock_response_content
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        assert service.fetch_google_trends() == []
+        assert service.fetch_google_news() == []
+
+def test_rss_service_missing_title_or_empty_text():
+    service = RSSService()
+    mock_response_content = (
+        b'<rss><channel>'
+        b'<item></item>' # Missing title
+        b'<item><title></title></item>' # Empty title text
+        b'</channel></rss>'
+    )
+    with patch("httpx.get") as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.content = mock_response_content
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        assert service.fetch_google_trends() == []
+        assert service.fetch_google_news() == []

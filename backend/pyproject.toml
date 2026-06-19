@@ -26,3 +26,10 @@ dependencies = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
+[tool.coverage.run]
+omit = [
+    "app/db/generate_fake_catalog.py",
+    "app/db/seed_demo_data.py",
+    "app/db/verify_catalog_import.py",
+]
+
