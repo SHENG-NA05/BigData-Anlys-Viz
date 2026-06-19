@@ -6,7 +6,7 @@ export const catalogService = {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const response = await apiClient.post('/catalog/upload', formData, {
+      const response = await apiClient.post('/catalog/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

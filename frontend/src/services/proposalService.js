@@ -4,10 +4,11 @@ export const proposalService = {
   // 創建企劃書
   createProposal: async (themeId, title, content) => {
     try {
-      const response = await apiClient.post('/proposal/create', {
+      const response = await apiClient.post('/export_to_proposal', {
         theme_id: themeId,
         title,
-        content,
+        outline: content || '',
+        target_audience: 'All Readers',
       })
       return response.data
     } catch (error) {
@@ -18,7 +19,7 @@ export const proposalService = {
   // 獲取企劃書詳情
   getProposal: async (proposalId) => {
     try {
-      const response = await apiClient.get(`/proposal/${proposalId}`)
+      const response = await apiClient.get(`/proposals/${proposalId}`)
       return response.data
     } catch (error) {
       throw error
@@ -28,7 +29,11 @@ export const proposalService = {
   // 更新企劃書
   updateProposal: async (proposalId, content) => {
     try {
-      const response = await apiClient.put(`/proposal/${proposalId}`, { content })
+      const response = await apiClient.put(`/proposals/${proposalId}`, {
+        title: 'Updated Proposal',
+        content,
+        status: 'draft',
+      })
       return response.data
     } catch (error) {
       throw error
@@ -38,7 +43,7 @@ export const proposalService = {
   // 匹配館藏
   matchCatalog: async (proposalId) => {
     try {
-      const response = await apiClient.post(`/proposal/${proposalId}/match-catalog`)
+      const response = await apiClient.post(`/proposals/${proposalId}/match`)
       return response.data
     } catch (error) {
       throw error
@@ -48,7 +53,7 @@ export const proposalService = {
   // 導出為 Word
   exportToWord: async (proposalId) => {
     try {
-      const response = await apiClient.get(`/proposal/${proposalId}/export-word`, {
+      const response = await apiClient.get(`/proposals/${proposalId}/export?format=docx`, {
         responseType: 'blob',
       })
       return response.data
@@ -60,7 +65,7 @@ export const proposalService = {
   // 導出為 PDF
   exportToPdf: async (proposalId) => {
     try {
-      const response = await apiClient.get(`/proposal/${proposalId}/export-pdf`, {
+      const response = await apiClient.get(`/proposals/${proposalId}/export?format=pdf`, {
         responseType: 'blob',
       })
       return response.data

@@ -5,7 +5,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
     // Intercept and mock API requests to isolate frontend E2E from backend dependencies
 
     // 1. Authentication Mock
-    await page.route('**/auth/login', async (route) => {
+    await page.route('**/curation_management/backend/login', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -46,7 +46,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
       });
     });
 
-    await page.route('**/catalog/upload', async (route) => {
+    await page.route('**/catalog/import', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -60,7 +60,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
     });
 
     // 3. AI Theme Generation Mocks
-    await page.route('**/curation/theme-history', async (route) => {
+    await page.route('**/history', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -75,7 +75,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
       });
     });
 
-    await page.route('**/curation/generate-themes', async (route) => {
+    await page.route('**/generate_themes', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -89,7 +89,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
     });
 
     // 4. Proposal Management Mocks
-    await page.route('**/proposal/create', async (route) => {
+    await page.route('**/export_to_proposal', async (route) => {
       await route.fulfill({
         status: 201,
         contentType: 'application/json',
@@ -102,7 +102,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
     });
 
     // Get proposal detail
-    await page.route('**/proposal/P001', async (route) => {
+    await page.route('**/proposals/P001', async (route) => {
       if (route.request().method() === 'PUT') {
         await route.fulfill({
           status: 200,
@@ -135,7 +135,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
       }
     });
 
-    await page.route('**/proposal/P001/match-catalog', async (route) => {
+    await page.route('**/proposals/P001/match', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -146,7 +146,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
       });
     });
 
-    await page.route('**/proposal/P001/export-word', async (route) => {
+    await page.route('**/proposals/P001/export*format=docx', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -154,7 +154,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
       });
     });
 
-    await page.route('**/proposal/P001/export-pdf', async (route) => {
+    await page.route('**/proposals/P001/export*format=pdf', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/pdf',

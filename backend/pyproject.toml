@@ -21,6 +21,7 @@ dependencies = [
     "reportlab>=4.0.0",
     "sqlalchemy>=2.0.0",
     "uvicorn>=0.22.0",
+    "pgvector>=0.2.0",
 ]
 
 [tool.pytest.ini_options]
