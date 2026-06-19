@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Form, Input, Button, Space, Row, Col, message, Modal, Divider, Select, Tooltip } from 'antd'
 import { SaveOutlined, FileWordOutlined, FilePdfOutlined, ShareAltOutlined, DeleteOutlined } from 'antd/icons'
 import { proposalService } from '../../../services/proposalService'
@@ -11,6 +11,26 @@ const ProposalEditor = () => {
   const [selectedProposal, setSelectedProposal] = useState(null)
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('exported_proposal')
+    if (stored) {
+      try {
+        const proposal = JSON.parse(stored)
+        setProposals([proposal])
+        setSelectedProposal(proposal)
+        form.setFieldsValue({
+          title: proposal.title,
+          themeId: proposal.themeId,
+        })
+        setContent(proposal.content)
+        // Clear it so it doesn't reload next time
+        localStorage.removeItem('exported_proposal')
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }, [])
 
   const handleSaveProposal = async (values) => {
     setSaving(true)

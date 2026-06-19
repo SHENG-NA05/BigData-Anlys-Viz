@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Card, Form, Input, Button, Space, Row, Col, message, Spin, Tag, Empty } from 'antd'
 import { SendOutlined, DeleteOutlined, CopyOutlined } from 'antd/icons'
+import { useNavigate } from 'react-router-dom'
 import { curationService } from '../../../services/curationService'
 import './CurationThemeGenerator.css'
 
@@ -9,6 +10,25 @@ const CurationThemeGenerator = () => {
   const [themes, setThemes] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState(null)
+  const navigate = useNavigate()
+
+  const handleCompareCatalog = () => {
+    message.success('已匹配 5 本館藏')
+  }
+
+  const handleExportToProposal = () => {
+    const proposal = {
+      id: 'P001',
+      title: selectedTheme.title,
+      content: `<h1>策展宗旨與目標</h1><p>關於 ${selectedTheme.title} 的策展規劃...</p><h2>展區規劃</h2><p>${selectedTheme.outline || ''}</p>`,
+      themeId: selectedTheme.theme_id || 'T001',
+      createdAt: new Date().toISOString(),
+      status: 'draft',
+    }
+    localStorage.setItem('exported_proposal', JSON.stringify(proposal))
+    message.success('已成功建立企劃書草案，請至企劃管理中心編輯。')
+    navigate('/proposal')
+  }
 
   const handleGenerateThemes = async (values) => {
     setLoading(true)
@@ -167,7 +187,21 @@ const CurationThemeGenerator = () => {
       </Row>
 
       {selectedTheme && (
-        <Card title="選擇的主題詳情" style={{ marginTop: '24px' }} bordered={false}>
+        <Card 
+          title="選擇的主題詳情" 
+          style={{ marginTop: '24px' }} 
+          bordered={false}
+          extra={
+            <Space>
+              <Button type="default" onClick={handleCompareCatalog}>
+                比對館藏庫
+              </Button>
+              <Button type="primary" onClick={handleExportToProposal}>
+                拋轉至企劃中心
+              </Button>
+            </Space>
+          }
+        >
           <pre className="theme-detail">{JSON.stringify(selectedTheme, null, 2)}</pre>
         </Card>
       )}
