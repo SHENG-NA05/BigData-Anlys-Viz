@@ -1,0 +1,18 @@
+.sidebar {
+  min-height: 100vh;
+  background: #001529;
+}
+
+.sidebar-logo {
+  padding: 20px;
+  border-bottom: 1px solid #415058;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  border-top: 1px solid #415058;
+}
