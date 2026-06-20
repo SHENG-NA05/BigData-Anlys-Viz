@@ -89,7 +89,7 @@ CURATION_TYPE_LABELS = {
 # ---------------------------------------------------------------------------
 # 常數設定
 # ---------------------------------------------------------------------------
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 1.0
 THEME_COUNT = 3
@@ -179,9 +179,11 @@ class AIService:
                         "Content-Type": "application/json",
                     }
                     
-                    # 將 gemini-2.0-flash 對接到 OpenRouter 的模型名稱
+                    # 將 gemini-3.1-flash-lite 對接到 OpenRouter 的模型名稱
                     openrouter_model = self.model_name
-                    if openrouter_model == "gemini-2.0-flash":
+                    if openrouter_model == "gemini-3.1-flash-lite":
+                        openrouter_model = "google/gemini-3.1-flash-lite"
+                    elif openrouter_model == "gemini-2.0-flash":
                         openrouter_model = "google/gemini-2.0-flash-exp"
                     
                     data = {
@@ -318,7 +320,7 @@ class AIService:
     # ------------------------------------------------------------------
     def get_embedding(self, text: str) -> list[float]:
         """
-        取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        取得文字的語意向量 (使用 Gemini Embeddings API: gemini-embedding-2，固定維度為 768)。
         若目前為 OpenRouter 模式或 API 呼叫失敗，將回傳空 list（自動降級為純文字匹配）。
         """
         try:
@@ -332,8 +334,9 @@ class AIService:
 
         try:
             response = self._client.models.embed_content(
-                model="text-embedding-004",
-                contents=text.strip()
+                model="gemini-embedding-2",
+                contents=text.strip(),
+                config=types.EmbedContentConfig(output_dimensionality=768)
             )
             if response.embeddings:
                 return response.embeddings[0].values
@@ -344,14 +347,14 @@ class AIService:
 
     def get_text_embedding(self, text: str) -> list[float]:
         """
-        取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        取得文字的語意向量 (使用 Gemini Embeddings API: gemini-embedding-2，固定維度為 768)。
         專門配合 SA/DB 所定義的接口命名。
         """
         return self.get_embedding(text)
 
     def get_embeddings_batch(self, texts: list[str]) -> list[list[float] | None]:
         """
-        批次取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        批次取得文字的語意向量 (使用 Gemini Embeddings API: gemini-embedding-2，固定維度為 768)。
         返回與輸入文字列表對應的向量列表，若失敗則對應項為 None。
         """
         if not texts:
@@ -365,15 +368,31 @@ class AIService:
         if self._use_openrouter or self._client is None:
             return [None] * len(texts)
 
-        try:
-            response = self._client.models.embed_content(
-                model="text-embedding-004",
-                contents=[(t.strip() if t else " ") for t in texts]
-            )
-            if response.embeddings:
-                return [emb.values for emb in response.embeddings]
-        except Exception as exc:
-            logger.warning("批次取得語意向量失敗：%s", str(exc))
+        import time
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                contents_list = [
+                    types.Content(parts=[types.Part.from_text(text=t.strip() if t else " ")])
+                    for t in texts
+                ]
+                response = self._client.models.embed_content(
+                    model="gemini-embedding-2",
+                    contents=contents_list,
+                    config=types.EmbedContentConfig(output_dimensionality=768)
+                )
+                if response.embeddings:
+                    return [emb.values for emb in response.embeddings]
+            except Exception as exc:
+                is_rate_limit = "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc)
+                if is_rate_limit and attempt < max_retries:
+                    sleep_time = 15.0 * attempt
+                    logger.warning("批次取得語意向量遭遇頻率限制 (429)，將於 %d 秒後進行第 %d 次重試...", sleep_time, attempt + 1)
+                    time.sleep(sleep_time)
+                    continue
+                else:
+                    logger.warning("批次取得語意向量失敗：%s", str(exc))
+                    break
 
         return [None] * len(texts)
 

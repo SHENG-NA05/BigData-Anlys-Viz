@@ -105,8 +105,10 @@ def test_export_to_proposal_creates_proposal_record(mock_expand):
     }
 
 
+@patch("app.services.ai_service.AIService.get_embedding")
 @patch("app.api.endpoints.proposal._ai_service.expand_proposal")
-def test_export_to_proposal_stores_matched_catalog_books(mock_expand, mock_expand_for_other=None):
+def test_export_to_proposal_stores_matched_catalog_books(mock_expand, mock_get_embedding):
+    mock_get_embedding.return_value = []
     # Depending on python mock decorators, the first argument is mock_expand.
     mock_expand.return_value = "<h1>AI Reading Future</h1><p>Plan a curation area for AI literacy books.</p>"
     theme = CurationTheme(

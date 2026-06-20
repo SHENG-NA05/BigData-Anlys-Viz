@@ -13,11 +13,11 @@ if str(BACKEND_DIR) not in sys.path:
 from app.db.init_db import init_db
 from app.db.models import CostBenefitLog, CurationTheme, Proposal, User
 from app.db.session import SessionLocal
-
+from app.core.security import get_password_hash
 
 DEMO_USER = {
     "username": "demo_curator",
-    "hashed_password": "demo-password-for-local-testing-only",
+    "hashed_password": get_password_hash("demo-password-for-local-testing-only"),
     "role": "curator",
     "sso_provider": "local-demo",
 }
@@ -109,6 +109,8 @@ DEMO_COST_BENEFIT_LOGS = [
 def seed_demo_user(db) -> User:
     user = db.query(User).filter(User.username == DEMO_USER["username"]).first()
     if user:
+        user.hashed_password = DEMO_USER["hashed_password"]
+        db.flush()
         return user
 
     user = User(**DEMO_USER)

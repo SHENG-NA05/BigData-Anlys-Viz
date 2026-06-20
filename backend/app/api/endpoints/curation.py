@@ -98,6 +98,11 @@ def get_history(
                 "theme_id": theme.theme_id,
                 "curation_type": theme.curation_type,
                 "title": theme.title,
+                "outline": theme.outline,
+                "target_audience": theme.target_audience,
+                "keywords": theme.keywords,
+                "prompt": theme.prompt,
+                "year": theme.year,
                 "create_time": theme.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             }
             for theme in themes
@@ -119,4 +124,15 @@ def get_rss_trends():
 
 def _generate_theme_id() -> str:
     return "T" + datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+
+@router.delete("/themes/{theme_id}")
+def delete_theme(theme_id: str, db: Session = Depends(get_db)):
+    theme = db.query(CurationTheme).filter(CurationTheme.theme_id == theme_id).first()
+    if not theme:
+        raise HTTPException(status_code=404, detail="Theme not found")
+    
+    db.delete(theme)
+    db.commit()
+    return {"status": "success", "message": f"Theme {theme_id} deleted"}
 

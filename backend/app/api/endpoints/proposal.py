@@ -19,6 +19,16 @@ router = APIRouter()
 _ai_service = AIService()
 
 
+@router.get("/proposals")
+def list_proposals(db: Session = Depends(get_db)):
+    from app.crud.proposal import list_proposals as list_proposals_record
+    proposals = list_proposals_record(db)
+    return {
+        "status": "success",
+        "data": [_proposal_to_response(p) for p in proposals],
+    }
+
+
 @router.get("/proposals/{proposal_id}")
 def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
     proposal = get_proposal_record(db, proposal_id)
@@ -471,4 +481,32 @@ def export_proposal(
     }
 
     return StreamingResponse(io.BytesIO(content), media_type=media_type, headers=headers)
+
+
+@router.post("/proposals/{proposal_id}/match")
+def match_proposal_books(proposal_id: str, db: Session = Depends(get_db)):
+    proposal = get_proposal_record(db, proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=404, detail=f"Proposal not found: {proposal_id}")
+
+    keywords = [proposal.title, proposal.content]
+    theme = None
+    if proposal.theme_id:
+        theme = get_curation_theme(db, proposal.theme_id)
+        if theme:
+            keywords.extend(theme.keywords or [])
+            keywords.append(theme.title)
+
+    matched_books = match_catalog_books(db, keywords)
+    proposal.matched_books = matched_books
+    try:
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update proposal matched books") from exc
+
+    return {
+        "status": "success",
+        "data": _proposal_to_response(proposal),
+    }
 
