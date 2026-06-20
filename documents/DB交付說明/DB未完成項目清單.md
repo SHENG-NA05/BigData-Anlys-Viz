@@ -129,8 +129,8 @@
 ## 12. pgvector 向量資料庫升級
 
 - [x] 在 `requirements.txt` 與 `pyproject.toml` 補上 `pgvector` Python 套件，並同步更新 `uv.lock`
-- [ ] 將 `CatalogBook.embedding` 從 `JSON` 改為 `Vector(768)`
-- [ ] 在 `init_db.py` 補上 `CREATE EXTENSION IF NOT EXISTS vector`
+- [x] 將 `CatalogBook.embedding` 從 `JSON` 改為 `Vector(768)`
+- [x] 在 `init_db.py` 補上 `CREATE EXTENSION IF NOT EXISTS vector`
 - [ ] 新增 Alembic migration，啟用 PostgreSQL `vector` extension
 - [ ] 在 migration 中為 `catalog_books` 新增 `embedding vector(768)` 欄位
 - [ ] 在 migration 中建立 `catalog_books.embedding` 的 HNSW cosine index
