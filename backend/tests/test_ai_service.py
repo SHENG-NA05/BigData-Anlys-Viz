@@ -152,6 +152,7 @@ def test_parse_json_response_handling_malformed():
 
 
 def test_get_text_embedding_success(mock_settings, mock_genai_client):
+    from google.genai import types
     mock_emb = MagicMock()
     mock_emb.values = [0.1, 0.2, 0.3]
     mock_response = MagicMock()
@@ -163,8 +164,9 @@ def test_get_text_embedding_success(mock_settings, mock_genai_client):
 
     assert emb == [0.1, 0.2, 0.3]
     mock_genai_client.models.embed_content.assert_called_once_with(
-        model="text-embedding-004",
-        contents="測試文字"
+        model="gemini-embedding-2",
+        contents="測試文字",
+        config=types.EmbedContentConfig(output_dimensionality=768)
     )
 
 

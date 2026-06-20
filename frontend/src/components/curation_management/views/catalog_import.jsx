@@ -20,7 +20,7 @@ const CatalogImport = () => {
         fileName: item.source_file,
         status: 'success',
         recordsCount: item.records_count,
-        vectorizedCount: item.records_count,
+        vectorizedCount: item.vectorized_count || 0,
         uploadedAt: new Date(item.imported_at).toLocaleString(),
       }))
       setImportHistory(mapped)

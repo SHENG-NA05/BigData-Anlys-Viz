@@ -318,7 +318,7 @@ class AIService:
     # ------------------------------------------------------------------
     def get_embedding(self, text: str) -> list[float]:
         """
-        取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        取得文字的語意向量 (使用 Gemini Embeddings API: gemini-embedding-2，固定維度為 768)。
         若目前為 OpenRouter 模式或 API 呼叫失敗，將回傳空 list（自動降級為純文字匹配）。
         """
         try:
@@ -332,8 +332,9 @@ class AIService:
 
         try:
             response = self._client.models.embed_content(
-                model="text-embedding-004",
-                contents=text.strip()
+                model="gemini-embedding-2",
+                contents=text.strip(),
+                config=types.EmbedContentConfig(output_dimensionality=768)
             )
             if response.embeddings:
                 return response.embeddings[0].values
@@ -344,14 +345,14 @@ class AIService:
 
     def get_text_embedding(self, text: str) -> list[float]:
         """
-        取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        取得文字的語意向量 (使用 Gemini Embeddings API: gemini-embedding-2，固定維度為 768)。
         專門配合 SA/DB 所定義的接口命名。
         """
         return self.get_embedding(text)
 
     def get_embeddings_batch(self, texts: list[str]) -> list[list[float] | None]:
         """
-        批次取得文字的語意向量 (使用 Gemini Embeddings API: text-embedding-004)。
+        批次取得文字的語意向量 (使用 Gemini Embeddings API: gemini-embedding-2，固定維度為 768)。
         返回與輸入文字列表對應的向量列表，若失敗則對應項為 None。
         """
         if not texts:
@@ -367,8 +368,9 @@ class AIService:
 
         try:
             response = self._client.models.embed_content(
-                model="text-embedding-004",
-                contents=[(t.strip() if t else " ") for t in texts]
+                model="gemini-embedding-2",
+                contents=[(t.strip() if t else " ") for t in texts],
+                config=types.EmbedContentConfig(output_dimensionality=768)
             )
             if response.embeddings:
                 return [emb.values for emb in response.embeddings]

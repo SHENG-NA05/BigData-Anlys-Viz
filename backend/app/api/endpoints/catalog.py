@@ -73,6 +73,7 @@ def get_upload_history(db: Session = Depends(get_db)):
         db.query(
             CatalogBook.source_file,
             func.count(CatalogBook.id).label("records_count"),
+            func.count(CatalogBook.embedding).label("vectorized_count"),
             func.max(CatalogBook.imported_at).label("imported_at"),
         )
         .filter(CatalogBook.source_file.isnot(None))
@@ -84,6 +85,7 @@ def get_upload_history(db: Session = Depends(get_db)):
         {
             "source_file": r.source_file,
             "records_count": r.records_count,
+            "vectorized_count": r.vectorized_count,
             "imported_at": r.imported_at,
         }
         for r in results
