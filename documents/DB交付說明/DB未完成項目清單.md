@@ -136,7 +136,7 @@
 - [x] 在 migration 中建立 `catalog_books.embedding` 的 HNSW cosine index
 - [ ] 確認既有資料庫可以從舊 schema migrate 到 pgvector schema
 - [ ] 確認全新資料庫可以直接透過 Alembic 建立 pgvector schema
-- [ ] 補上本機 PostgreSQL + pgvector 啟動方式，例如 Docker Compose
+- [x] 補上本機 PostgreSQL + pgvector 啟動方式，例如 Docker Compose
 - [ ] 確認館藏匯入時產生的 768 維 embedding 可以正確寫入 `vector(768)` 欄位
 - [ ] 將館藏匹配邏輯改為使用 pgvector cosine distance 查詢，而不是在 Python 端重算候選書向量
 - [ ] 補上 pgvector 查詢的單元測試或整合測試

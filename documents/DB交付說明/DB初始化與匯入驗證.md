@@ -20,24 +20,32 @@ $env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/curation_db"
 
 ## 2. 前置條件
 
-本機需要先有可用的 PostgreSQL server。
+本機需要先有可用的 PostgreSQL server。因 SA 已將架構升級為 PostgreSQL + pgvector，建議優先使用專案根目錄的 `docker-compose.yml` 啟動內建 pgvector 的 PostgreSQL。
 
 可以使用其中一種方式：
 
 - 安裝並啟動 Windows 版 PostgreSQL。
-- 啟動 Docker Desktop，並使用 PostgreSQL container。
+- 啟動 Docker Desktop，並使用專案提供的 pgvector PostgreSQL container。
 - 使用學校或雲端提供的 PostgreSQL，只要 `DATABASE_URL` 可連線即可。
 
-本次驗證使用 Docker 建立 PostgreSQL：
+使用 Docker Compose 啟動：
+
+```bash
+docker compose up -d postgres
+```
+
+本專案 Docker Compose 設定：
 
 ```text
-container: bigdata-curation-postgres
-image: postgres:16
+container: smart-curation-postgres
+image: pgvector/pgvector:pg16
 port: 5432 -> 5432
 database: curation_db
 user: postgres
 password: postgres
 ```
+
+此 image 已內建 PostgreSQL `vector` extension，Alembic migration 與 `init_db.py` 會執行 `CREATE EXTENSION IF NOT EXISTS vector`。
 
 ## 3. 一鍵初始化與匯入驗證
 
