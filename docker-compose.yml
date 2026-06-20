@@ -1,18 +1,23 @@
 version: '3.8'
 
 services:
-  db:
+  postgres:
     image: pgvector/pgvector:pg16
-    container_name: bigdata-curation-postgres
+    container_name: smart-curation-postgres
     restart: always
     environment:
+      POSTGRES_DB: curation_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: curation_db
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d curation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./backend
@@ -21,11 +26,11 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      - postgres
     volumes:
       - ./backend:/app
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/curation_db
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/curation_db
       GEMINI_API_KEY: mock-api-key
       OPENROUTER_API_KEY: ""
 

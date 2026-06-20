@@ -20,24 +20,42 @@ $env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/curation_db"
 
 ## 2. 前置條件
 
-本機需要先有可用的 PostgreSQL server。
+本機需要先有可用的 PostgreSQL server。因 SA 已將架構升級為 PostgreSQL + pgvector，建議優先使用專案根目錄的 `docker-compose.yml` 啟動內建 pgvector 的 PostgreSQL。
 
 可以使用其中一種方式：
 
 - 安裝並啟動 Windows 版 PostgreSQL。
-- 啟動 Docker Desktop，並使用 PostgreSQL container。
+- 啟動 Docker Desktop，並使用專案提供的 pgvector PostgreSQL container。
 - 使用學校或雲端提供的 PostgreSQL，只要 `DATABASE_URL` 可連線即可。
 
-本次驗證使用 Docker 建立 PostgreSQL：
+使用 Docker Compose 啟動：
+
+```bash
+docker compose up -d postgres
+```
+
+本專案 Docker Compose 設定：
 
 ```text
-container: bigdata-curation-postgres
-image: postgres:16
-port: 5432 -> 5432
+container: smart-curation-postgres
+image: pgvector/pgvector:pg16
+port: ${POSTGRES_PORT:-5432} -> 5432
 database: curation_db
 user: postgres
 password: postgres
 ```
+
+此 image 已內建 PostgreSQL `vector` extension，Alembic migration 與 `init_db.py` 會執行 `CREATE EXTENSION IF NOT EXISTS vector`。
+
+如果本機 `5432` 已被既有 PostgreSQL 佔用，可以改用其他對外 port。PowerShell 範例：
+
+```powershell
+$env:POSTGRES_PORT="5433"
+docker compose up -d postgres
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5433/curation_db"
+```
+
+此時 container 內部仍使用 PostgreSQL `5432`，只有本機連線 port 改成 `5433`。
 
 ## 3. 一鍵初始化與匯入驗證
 
@@ -77,7 +95,94 @@ imported_count=50
 catalog_books_total=50
 ```
 
-## 4. 本次驗證結果
+## 4. pgvector schema 驗證
+
+若要確認 Alembic migration 已正確升級到 pgvector schema，先執行：
+
+```bash
+cd backend
+python -m alembic upgrade head
+python app/db/verify_pgvector_schema.py
+```
+
+成功時應看到：
+
+```text
+vector_extension=True
+embedding_type=vector(768)
+hnsw_index=True
+pgvector_schema=ok
+```
+
+這代表：
+
+- PostgreSQL 已啟用 `vector` extension。
+- `catalog_books.embedding` 已是 `vector(768)` 欄位。
+- `idx_catalog_books_embedding` 已使用 HNSW 與 `vector_cosine_ops` 建立索引。
+
+此驗證適用於兩種情境：
+
+- 既有資料庫從舊 schema 執行 `alembic upgrade head` 後。
+- 全新資料庫直接執行 `alembic upgrade head` 後。
+
+若要用臨時資料庫實際驗證上述兩種 migration 路徑，可執行：
+
+```bash
+cd backend
+python app/db/verify_pgvector_migration.py
+```
+
+此腳本會建立兩個臨時資料庫：
+
+- `*_pgvector_fresh_*`：全新資料庫直接執行 `alembic upgrade head`。
+- `*_pgvector_legacy_*`：先升到 `20260616_0001`，再升到 `head`，模擬舊 schema 升級。
+
+成功時會看到：
+
+```text
+fresh_migration=ok
+legacy_migration=ok
+pgvector_migration=ok
+```
+
+預設會在驗證完成後刪除臨時資料庫；如需保留可加上 `--keep-databases`。
+
+如果看到 `PostgreSQL server does not have pgvector installed`，代表目前 `DATABASE_URL` 連到的 PostgreSQL 不是 pgvector 版本。請改用專案 Docker Compose 的 `pgvector/pgvector:pg16`，或在該 PostgreSQL server 安裝 pgvector。
+
+若要進一步確認館藏匯入時已把 768 維 embedding 寫入 `catalog_books.embedding`，請先確認 `.env` 已設定 `GEMINI_API_KEY`，再執行館藏匯入，最後執行：
+
+```bash
+cd backend
+python app/db/verify_pgvector_schema.py --require-catalog-embeddings
+```
+
+成功時會額外看到：
+
+```text
+catalog_books_total=50
+catalog_books_with_embedding=50
+invalid_embedding_dimensions=0
+pgvector_schema=ok
+```
+
+如果 `catalog_books_with_embedding=0`，通常代表匯入時沒有可用的 `GEMINI_API_KEY`，系統已降級成只寫入書目文字欄位。
+
+若要確認館藏匹配流程有實際使用 pgvector 查詢，請在已有館藏 embedding 後執行：
+
+```bash
+cd backend
+python app/db/verify_pgvector_query.py --keywords AI 資料
+```
+
+成功時會看到至少一筆 `match_reason` 包含 `pgvector語意相似度`，最後輸出：
+
+```text
+pgvector_query=ok
+```
+
+若出現 `catalog matching did not use pgvector semantic results`，代表目前流程降級成文字匹配；常見原因是沒有 `GEMINI_API_KEY`、館藏沒有 embedding，或 pgvector schema 尚未升級完成。
+
+## 5. 本次驗證結果
 
 已執行：
 
@@ -121,7 +226,7 @@ imported_count=50
 catalog_books_total=50
 ```
 
-## 5. 使用其他 CSV
+## 6. 使用其他 CSV
 
 如果要匯入其他虛擬資料：
 
@@ -130,7 +235,7 @@ python backend/app/db/generate_fake_catalog.py --count 5000 --output data/fake_c
 python backend/app/db/verify_catalog_import.py --csv data/fake_catalog_5000.csv --clear-catalog
 ```
 
-## 6. 驗證重點
+## 7. 驗證重點
 
 執行成功後，代表以下項目通過：
 
@@ -140,8 +245,9 @@ python backend/app/db/verify_catalog_import.py --csv data/fake_catalog_5000.csv 
 - `system_settings` 預設參數已寫入。
 - `catalog_books` 可以寫入館藏資料。
 - CSV 匯入服務可以實際寫入 PostgreSQL。
+- pgvector schema 可透過 `verify_pgvector_schema.py` 確認。
 
-## 7. 常見錯誤
+## 8. 常見錯誤
 
 ### PostgreSQL 未啟動
 

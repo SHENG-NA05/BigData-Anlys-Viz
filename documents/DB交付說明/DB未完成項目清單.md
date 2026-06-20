@@ -2,6 +2,8 @@
 
 本文件用來追蹤 DB 角色後續尚未完成的工作。已完成項目可將 `[ ]` 改成 `[x]`。
 
+> 2026-06-20 更新：SA 已將架構調整為 **PostgreSQL + pgvector 向量語意檢索**。下方 1 到 11 節為原本 PostgreSQL CRUD、匯入、測試與展示資料的完成狀態；第 12 節新增向量資料庫升級後仍需補齊的項目。
+
 ## 目前已完成
 
 - [x] 建立 SQLAlchemy `Base`
@@ -124,6 +126,26 @@
 - [x] 確認 `catalog_books` 查詢結果正常
 - [x] 使用虛擬館藏測試 AI 館藏匹配
 
+## 12. pgvector 向量資料庫升級
+
+- [x] 在 `requirements.txt` 與 `pyproject.toml` 補上 `pgvector` Python 套件，並同步更新 `uv.lock`
+- [x] 將 `CatalogBook.embedding` 從 `JSON` 改為 `Vector(768)`
+- [x] 在 `init_db.py` 補上 `CREATE EXTENSION IF NOT EXISTS vector`
+- [x] 新增 Alembic migration，啟用 PostgreSQL `vector` extension
+- [x] 在 migration 中為 `catalog_books` 新增 `embedding vector(768)` 欄位
+- [x] 在 migration 中建立 `catalog_books.embedding` 的 HNSW cosine index
+- [x] 補上 pgvector migration chain 與關鍵 SQL 的靜態測試
+- [x] 補上既有資料庫從舊 schema migrate 到 pgvector schema 的驗證腳本
+- [x] 補上全新資料庫直接透過 Alembic 建立 pgvector schema 的驗證腳本
+- [x] 補上本機 PostgreSQL + pgvector 啟動方式，例如 Docker Compose
+- [x] 補上 `POSTGRES_PORT` 設定，避免本機 `5432` port 衝突
+- [x] 補上館藏匯入 embedding 驗證工具，確認 768 維 embedding 可寫入 `vector(768)` 欄位
+- [x] 將館藏匹配邏輯改為使用 pgvector cosine distance 查詢，而不是在 Python 端重算候選書向量
+- [x] 補上 pgvector 查詢的單元測試或整合測試
+- [x] 補上 pgvector migration schema 驗證腳本與說明文件
+- [x] 補上 pgvector 匯入驗證說明文件
+- [x] 補上 pgvector 查詢驗證工具與說明文件
+
 ## 建議下一步
 
-目前 DB 核心開發、測試資料、展示資料規劃、最終驗收紀錄、展示 SOP 與 RA / SA 館藏欄位確認都已完成。若後續 RA / SA 提供的實際 Excel / CSV 表頭與系統規格書第 3 點不同，再補欄位別名或調整匯入驗證規則。
+目前 DB 核心開發、測試資料、展示資料規劃、最終驗收紀錄、展示 SOP、RA / SA 館藏欄位確認，以及 SA 新增的 PostgreSQL + pgvector 架構補強項目都已完成。後續若要做實機驗收，請使用內建 pgvector 的 PostgreSQL 環境執行 `verify_pgvector_migration.py`、`verify_pgvector_schema.py --require-catalog-embeddings` 與 `verify_pgvector_query.py`。

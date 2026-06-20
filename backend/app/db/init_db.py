@@ -27,6 +27,7 @@ DEFAULT_SYSTEM_SETTINGS = [
 def create_tables():
     with engine.begin() as connection:
         connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         Base.metadata.create_all(bind=connection)
 
 
