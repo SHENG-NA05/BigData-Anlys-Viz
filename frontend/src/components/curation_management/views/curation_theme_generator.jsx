@@ -3,6 +3,7 @@ import { Card, Form, Input, Button, Space, Row, Col, message, Spin, Tag, Empty }
 import { SendOutlined, DeleteOutlined, CopyOutlined } from 'antd/icons'
 import { useNavigate } from 'react-router-dom'
 import { curationService } from '../../../services/curationService'
+import { proposalService } from '../../../services/proposalService'
 import './CurationThemeGenerator.css'
 
 const CurationThemeGenerator = () => {
@@ -16,18 +17,38 @@ const CurationThemeGenerator = () => {
     message.success('已匹配 5 本館藏')
   }
 
-  const handleExportToProposal = () => {
-    const proposal = {
-      id: 'P001',
-      title: selectedTheme.title,
-      content: `<h1>策展宗旨與目標</h1><p>關於 ${selectedTheme.title} 的策展規劃...</p><h2>展區規劃</h2><p>${selectedTheme.outline || ''}</p>`,
-      themeId: selectedTheme.theme_id || 'T001',
-      createdAt: new Date().toISOString(),
-      status: 'draft',
+  const handleExportToProposal = async () => {
+    setLoading(true)
+    try {
+      const response = await proposalService.createProposal(
+        selectedTheme.theme_id || 'T001',
+        selectedTheme.title,
+        selectedTheme.outline || ''
+      )
+      
+      if (response && response.status === 'success') {
+        const fullProposal = await proposalService.getProposal(response.proposal_id)
+        const proposalData = {
+          id: response.proposal_id,
+          title: selectedTheme.title,
+          content: fullProposal.data.content,
+          themeId: selectedTheme.theme_id || 'T001',
+          createdAt: fullProposal.data.created_at || new Date().toISOString(),
+          status: 'draft',
+          matched_books: fullProposal.data.matched_books || [],
+        }
+        localStorage.setItem('exported_proposal', JSON.stringify(proposalData))
+        message.success('已成功建立企劃書草案，請至企劃管理中心編輯。')
+        navigate('/proposal')
+      } else {
+        message.error('拋轉企劃書失敗')
+      }
+    } catch (error) {
+      message.error('拋轉失敗，請檢查後端服務')
+      console.error(error)
+    } finally {
+      setLoading(false)
     }
-    localStorage.setItem('exported_proposal', JSON.stringify(proposal))
-    message.success('已成功建立企劃書草案，請至企劃管理中心編輯。')
-    navigate('/proposal')
   }
 
   const handleGenerateThemes = async (values) => {

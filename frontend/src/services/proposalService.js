@@ -27,12 +27,12 @@ export const proposalService = {
   },
 
   // 更新企劃書
-  updateProposal: async (proposalId, content) => {
+  updateProposal: async (proposalId, title, content, status = 'draft') => {
     try {
       const response = await apiClient.put(`/proposals/${proposalId}`, {
-        title: 'Updated Proposal',
+        title,
         content,
-        status: 'draft',
+        status,
       })
       return response.data
     } catch (error) {

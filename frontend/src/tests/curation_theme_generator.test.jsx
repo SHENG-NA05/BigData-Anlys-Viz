@@ -11,6 +11,14 @@ jest.mock('../services/curationService', () => ({
   },
 }));
 
+// Mock proposalService
+jest.mock('../services/proposalService', () => ({
+  proposalService: {
+    createProposal: jest.fn(),
+    getProposal: jest.fn(),
+  },
+}));
+
 describe('CurationThemeGenerator Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
