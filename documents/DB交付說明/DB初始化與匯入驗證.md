@@ -115,6 +115,24 @@ pgvector_schema=ok
 - 既有資料庫從舊 schema 執行 `alembic upgrade head` 後。
 - 全新資料庫直接執行 `alembic upgrade head` 後。
 
+若要進一步確認館藏匯入時已把 768 維 embedding 寫入 `catalog_books.embedding`，請先確認 `.env` 已設定 `GEMINI_API_KEY`，再執行館藏匯入，最後執行：
+
+```bash
+cd backend
+python app/db/verify_pgvector_schema.py --require-catalog-embeddings
+```
+
+成功時會額外看到：
+
+```text
+catalog_books_total=50
+catalog_books_with_embedding=50
+invalid_embedding_dimensions=0
+pgvector_schema=ok
+```
+
+如果 `catalog_books_with_embedding=0`，通常代表匯入時沒有可用的 `GEMINI_API_KEY`，系統已降級成只寫入書目文字欄位。
+
 ## 5. 本次驗證結果
 
 已執行：

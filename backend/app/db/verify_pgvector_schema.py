@@ -1,3 +1,4 @@
+import argparse
 import sys
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from app.db.session import SessionLocal
 
 
 EXPECTED_EMBEDDING_TYPE = "vector(768)"
+EXPECTED_EMBEDDING_DIMENSION = 768
 
 
 def get_pgvector_schema_state() -> dict[str, object]:
@@ -74,13 +76,73 @@ def validate_pgvector_schema(state: dict[str, object]) -> list[str]:
     return errors
 
 
+def get_catalog_embedding_state() -> dict[str, int]:
+    db = SessionLocal()
+    try:
+        row = db.execute(
+            text(
+                """
+                SELECT
+                    COUNT(*) AS total_count,
+                    COUNT(embedding) AS embedded_count,
+                    COUNT(*) FILTER (
+                        WHERE embedding IS NOT NULL
+                          AND vector_dims(embedding) <> :expected_dimension
+                    ) AS invalid_dimension_count
+                FROM catalog_books
+                """
+            ),
+            {"expected_dimension": EXPECTED_EMBEDDING_DIMENSION},
+        ).mappings().one()
+    finally:
+        db.close()
+
+    return {
+        "total_count": int(row["total_count"] or 0),
+        "embedded_count": int(row["embedded_count"] or 0),
+        "invalid_dimension_count": int(row["invalid_dimension_count"] or 0),
+    }
+
+
+def validate_catalog_embeddings(state: dict[str, int]) -> list[str]:
+    errors = []
+    if state.get("total_count", 0) <= 0:
+        errors.append("catalog_books has no rows")
+    if state.get("embedded_count", 0) <= 0:
+        errors.append("catalog_books has no stored embeddings")
+    if state.get("invalid_dimension_count", 0) > 0:
+        errors.append(
+            f"catalog_books has {state['invalid_dimension_count']} embeddings "
+            f"with dimension other than {EXPECTED_EMBEDDING_DIMENSION}"
+        )
+    return errors
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Verify PostgreSQL pgvector catalog schema.")
+    parser.add_argument(
+        "--require-catalog-embeddings",
+        action="store_true",
+        help="Also require imported catalog rows to have 768-dimension embeddings.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
     state = get_pgvector_schema_state()
     errors = validate_pgvector_schema(state)
 
     print(f"vector_extension={state['vector_extension']}")
     print(f"embedding_type={state['embedding_type']}")
     print(f"hnsw_index={state['hnsw_index']}")
+
+    if args.require_catalog_embeddings:
+        embedding_state = get_catalog_embedding_state()
+        errors.extend(validate_catalog_embeddings(embedding_state))
+        print(f"catalog_books_total={embedding_state['total_count']}")
+        print(f"catalog_books_with_embedding={embedding_state['embedded_count']}")
+        print(f"invalid_embedding_dimensions={embedding_state['invalid_dimension_count']}")
 
     if errors:
         for error in errors:
