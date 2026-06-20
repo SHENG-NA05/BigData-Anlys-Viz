@@ -31,6 +31,20 @@ const DashboardView = () => {
     { name: '使用者服務', value: 15, color: '#ff7c7c' },
   ]
 
+  const loadSettings = async () => {
+    try {
+      const settings = await dashboardService.getSettings()
+      setHourlyRate(settings.hourly_rate)
+      setBaseHours(settings.base_hours)
+    } catch (error) {
+      console.error("Failed to load settings:", error)
+    }
+  }
+
+  useEffect(() => {
+    loadSettings()
+  }, [])
+
   useEffect(() => {
     loadDashboardStats()
   }, [timeRange])
@@ -38,19 +52,20 @@ const DashboardView = () => {
   const loadDashboardStats = async () => {
     setLoading(true)
     try {
-      // 實際API調用會使用：
-      // const data = await dashboardService.getDashboardStats(timeRange)
-      // 現在使用模擬數據
-      const totalSavedHours = mockMonthlyData.reduce((sum, d) => sum + d.savedHours, 0)
-      const totalSavedCost = mockMonthlyData.reduce((sum, d) => sum + d.savedCost, 0)
-      
+      const data = await dashboardService.getDashboardStats(timeRange)
+      const mappedMonthlyData = (data.monthly_stats || []).map(item => ({
+        month: item.month,
+        savedHours: item.hours,
+        savedCost: item.cost
+      }))
+
       setStats({
-        totalSavedHours,
-        totalSavedCost,
-        monthlyData: mockMonthlyData,
+        totalSavedHours: data.cumulative_hours_saved,
+        totalSavedCost: data.cumulative_cost_saved,
+        monthlyData: mappedMonthlyData,
         categoryData: mockCategoryData,
-        projectCount: 24,
-        themeCount: 15,
+        projectCount: data.proposal_export_count,
+        themeCount: data.theme_generation_count,
       })
     } catch (error) {
       message.error('載入數據失敗')
@@ -61,8 +76,7 @@ const DashboardView = () => {
 
   const handleUpdateSettings = async () => {
     try {
-      // 實際API調用
-      // await dashboardService.updateSettings(parseFloat(hourlyRate), parseFloat(baseHours))
+      await dashboardService.updateSettings(parseFloat(hourlyRate), parseFloat(baseHours))
       message.success('設置已更新')
       setSettingsVisible(false)
       loadDashboardStats()

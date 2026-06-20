@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Upload, Button, Table, Progress, message, Row, Col, Statistic, Tag, Modal, Space } from 'antd'
 import { InboxOutlined, CheckCircleOutlined, ExclamationCircleOutlined, DownloadOutlined } from 'antd/icons'
 import { catalogService } from '../../../services/catalogService'
@@ -9,6 +9,29 @@ const CatalogImport = () => {
   const [importHistory, setImportHistory] = useState([])
   const [uploadProgress, setUploadProgress] = useState(0)
   const [validationResult, setValidationResult] = useState(null)
+
+  const loadUploadHistory = async () => {
+    console.log("loadUploadHistory starting...")
+    try {
+      const history = await catalogService.getUploadHistory()
+      console.log("loadUploadHistory fetched successfully:", history)
+      const mapped = history.map((item, index) => ({
+        id: index,
+        fileName: item.source_file,
+        status: 'success',
+        recordsCount: item.records_count,
+        vectorizedCount: item.records_count,
+        uploadedAt: new Date(item.imported_at).toLocaleString(),
+      }))
+      setImportHistory(mapped)
+    } catch (error) {
+      console.error("loadUploadHistory error caught:", error)
+    }
+  }
+
+  useEffect(() => {
+    loadUploadHistory()
+  }, [])
 
   const handleBeforeUpload = async (file) => {
     // 文件驗證
@@ -51,20 +74,9 @@ const CatalogImport = () => {
       // 上傳文件
       const response = await catalogService.uploadCatalog(file)
       
-      // 添加到歷史記錄
-      const importRecord = {
-        id: Date.now(),
-        fileName: file.name,
-        fileSize: file.size,
-        uploadedAt: new Date().toLocaleString(),
-        status: 'success',
-        recordsCount: response.records_count || Math.floor(Math.random() * 1000) + 100,
-        vectorizedCount: response.vectorized_count || Math.floor(Math.random() * 1000) + 50,
-      }
-
-      setImportHistory([importRecord, ...importHistory])
-      message.success(`成功匯入 ${importRecord.recordsCount} 筆館藏記錄`)
+      message.success(`成功匯入 ${response.imported_count || response.records_count || 0} 筆館藏記錄`)
       setUploadProgress(0)
+      loadUploadHistory()
     } catch (error) {
       const importRecord = {
         id: Date.now(),

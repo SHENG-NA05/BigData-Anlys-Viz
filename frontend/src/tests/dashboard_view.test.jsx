@@ -15,8 +15,25 @@ jest.mock('recharts', () => {
 // Mock dashboardService to prevent loading api.js with import.meta
 jest.mock('../services/dashboardService', () => ({
   dashboardService: {
-    getDashboardStats: jest.fn(),
-    updateSettings: jest.fn(),
+    getDashboardStats: jest.fn().mockResolvedValue({
+      cumulative_hours_saved: 134,
+      cumulative_cost_saved: 67000,
+      theme_generation_count: 15,
+      proposal_export_count: 24,
+      monthly_stats: [
+        { month: '1月', hours: 12, cost: 6000 },
+        { month: '2月', hours: 18, cost: 9000 },
+        { month: '3月', hours: 24, cost: 12000 },
+        { month: '4月', hours: 20, cost: 10000 },
+        { month: '5月', hours: 28, cost: 14000 },
+        { month: '6月', hours: 32, cost: 16000 },
+      ],
+    }),
+    getSettings: jest.fn().mockResolvedValue({
+      hourly_rate: 500,
+      base_hours: 8,
+    }),
+    updateSettings: jest.fn().mockResolvedValue({ status: 'success' }),
   },
 }));
 
