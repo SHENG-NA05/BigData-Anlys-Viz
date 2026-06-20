@@ -115,6 +115,28 @@ pgvector_schema=ok
 - 既有資料庫從舊 schema 執行 `alembic upgrade head` 後。
 - 全新資料庫直接執行 `alembic upgrade head` 後。
 
+若要用臨時資料庫實際驗證上述兩種 migration 路徑，可執行：
+
+```bash
+cd backend
+python app/db/verify_pgvector_migration.py
+```
+
+此腳本會建立兩個臨時資料庫：
+
+- `*_pgvector_fresh_*`：全新資料庫直接執行 `alembic upgrade head`。
+- `*_pgvector_legacy_*`：先升到 `20260616_0001`，再升到 `head`，模擬舊 schema 升級。
+
+成功時會看到：
+
+```text
+fresh_migration=ok
+legacy_migration=ok
+pgvector_migration=ok
+```
+
+預設會在驗證完成後刪除臨時資料庫；如需保留可加上 `--keep-databases`。
+
 若要進一步確認館藏匯入時已把 768 維 embedding 寫入 `catalog_books.embedding`，請先確認 `.env` 已設定 `GEMINI_API_KEY`，再執行館藏匯入，最後執行：
 
 ```bash

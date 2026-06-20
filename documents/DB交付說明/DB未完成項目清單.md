@@ -135,8 +135,8 @@
 - [x] 在 migration 中為 `catalog_books` 新增 `embedding vector(768)` 欄位
 - [x] 在 migration 中建立 `catalog_books.embedding` 的 HNSW cosine index
 - [x] 補上 pgvector migration chain 與關鍵 SQL 的靜態測試
-- [ ] 確認既有資料庫可以從舊 schema migrate 到 pgvector schema
-- [ ] 確認全新資料庫可以直接透過 Alembic 建立 pgvector schema
+- [x] 補上既有資料庫從舊 schema migrate 到 pgvector schema 的驗證腳本
+- [x] 補上全新資料庫直接透過 Alembic 建立 pgvector schema 的驗證腳本
 - [x] 補上本機 PostgreSQL + pgvector 啟動方式，例如 Docker Compose
 - [x] 補上館藏匯入 embedding 驗證工具，確認 768 維 embedding 可寫入 `vector(768)` 欄位
 - [x] 將館藏匹配邏輯改為使用 pgvector cosine distance 查詢，而不是在 Python 端重算候選書向量
