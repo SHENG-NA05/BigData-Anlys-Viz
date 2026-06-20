@@ -50,7 +50,7 @@ class FakeSession:
         self.closed = True
 
 
-def test_create_tables_creates_pgcrypto_extension_and_models(monkeypatch):
+def test_create_tables_creates_required_extensions_and_models(monkeypatch):
     fake_engine = FakeEngine()
     create_all_calls = []
 
@@ -62,7 +62,10 @@ def test_create_tables_creates_pgcrypto_extension_and_models(monkeypatch):
 
     init_db.create_tables()
 
-    assert fake_engine.connection.executed == ["CREATE EXTENSION IF NOT EXISTS pgcrypto"]
+    assert fake_engine.connection.executed == [
+        "CREATE EXTENSION IF NOT EXISTS pgcrypto",
+        "CREATE EXTENSION IF NOT EXISTS vector",
+    ]
     assert create_all_calls == [fake_engine.connection]
 
 
