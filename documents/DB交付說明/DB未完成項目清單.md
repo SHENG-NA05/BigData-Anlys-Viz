@@ -140,7 +140,8 @@
 - [ ] 確認館藏匯入時產生的 768 維 embedding 可以正確寫入 `vector(768)` 欄位
 - [ ] 將館藏匹配邏輯改為使用 pgvector cosine distance 查詢，而不是在 Python 端重算候選書向量
 - [ ] 補上 pgvector 查詢的單元測試或整合測試
-- [ ] 補上 pgvector migration、匯入與查詢驗證說明文件
+- [x] 補上 pgvector migration schema 驗證腳本與說明文件
+- [ ] 補上 pgvector 匯入與查詢驗證說明文件
 
 ## 建議下一步
 
