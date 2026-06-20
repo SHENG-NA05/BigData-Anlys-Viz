@@ -89,7 +89,7 @@ CURATION_TYPE_LABELS = {
 # ---------------------------------------------------------------------------
 # 常數設定
 # ---------------------------------------------------------------------------
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 1.0
 THEME_COUNT = 3
@@ -179,9 +179,11 @@ class AIService:
                         "Content-Type": "application/json",
                     }
                     
-                    # 將 gemini-2.0-flash 對接到 OpenRouter 的模型名稱
+                    # 將 gemini-3.1-flash-lite 對接到 OpenRouter 的模型名稱
                     openrouter_model = self.model_name
-                    if openrouter_model == "gemini-2.0-flash":
+                    if openrouter_model == "gemini-3.1-flash-lite":
+                        openrouter_model = "google/gemini-3.1-flash-lite"
+                    elif openrouter_model == "gemini-2.0-flash":
                         openrouter_model = "google/gemini-2.0-flash-exp"
                     
                     data = {

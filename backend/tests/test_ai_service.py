@@ -64,7 +64,7 @@ def test_generate_themes_success(mock_settings, mock_genai_client):
     # Verify model config and generate_content calls
     mock_genai_client.models.generate_content.assert_called_once()
     args, kwargs = mock_genai_client.models.generate_content.call_args
-    assert kwargs["model"] == "gemini-2.0-flash"
+    assert kwargs["model"] == "gemini-3.1-flash-lite"
     assert "近期時事話題" in kwargs["contents"]
     assert "AI" in kwargs["contents"]
 
