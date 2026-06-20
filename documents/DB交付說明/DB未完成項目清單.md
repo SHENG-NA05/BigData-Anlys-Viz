@@ -138,6 +138,7 @@
 - [x] 補上既有資料庫從舊 schema migrate 到 pgvector schema 的驗證腳本
 - [x] 補上全新資料庫直接透過 Alembic 建立 pgvector schema 的驗證腳本
 - [x] 補上本機 PostgreSQL + pgvector 啟動方式，例如 Docker Compose
+- [x] 補上 `POSTGRES_PORT` 設定，避免本機 `5432` port 衝突
 - [x] 補上館藏匯入 embedding 驗證工具，確認 768 維 embedding 可寫入 `vector(768)` 欄位
 - [x] 將館藏匹配邏輯改為使用 pgvector cosine distance 查詢，而不是在 Python 端重算候選書向量
 - [x] 補上 pgvector 查詢的單元測試或整合測試
@@ -147,4 +148,4 @@
 
 ## 建議下一步
 
-目前 DB 核心開發、測試資料、展示資料規劃、最終驗收紀錄、展示 SOP 與 RA / SA 館藏欄位確認都已完成。因 SA 新增 pgvector 架構，下一步應優先完成第 12 節：先補 `pgvector` 套件與 `Vector(768)` schema，再新增 Alembic migration 與 HNSW 索引，最後把館藏匹配改成由 PostgreSQL 執行向量相似度查詢。
+目前 DB 核心開發、測試資料、展示資料規劃、最終驗收紀錄、展示 SOP、RA / SA 館藏欄位確認，以及 SA 新增的 PostgreSQL + pgvector 架構補強項目都已完成。後續若要做實機驗收，請使用內建 pgvector 的 PostgreSQL 環境執行 `verify_pgvector_migration.py`、`verify_pgvector_schema.py --require-catalog-embeddings` 與 `verify_pgvector_query.py`。

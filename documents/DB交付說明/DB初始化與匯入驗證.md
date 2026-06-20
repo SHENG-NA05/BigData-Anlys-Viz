@@ -39,13 +39,23 @@ docker compose up -d postgres
 ```text
 container: smart-curation-postgres
 image: pgvector/pgvector:pg16
-port: 5432 -> 5432
+port: ${POSTGRES_PORT:-5432} -> 5432
 database: curation_db
 user: postgres
 password: postgres
 ```
 
 此 image 已內建 PostgreSQL `vector` extension，Alembic migration 與 `init_db.py` 會執行 `CREATE EXTENSION IF NOT EXISTS vector`。
+
+如果本機 `5432` 已被既有 PostgreSQL 佔用，可以改用其他對外 port。PowerShell 範例：
+
+```powershell
+$env:POSTGRES_PORT="5433"
+docker compose up -d postgres
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5433/curation_db"
+```
+
+此時 container 內部仍使用 PostgreSQL `5432`，只有本機連線 port 改成 `5433`。
 
 ## 3. 一鍵初始化與匯入驗證
 
@@ -136,6 +146,8 @@ pgvector_migration=ok
 ```
 
 預設會在驗證完成後刪除臨時資料庫；如需保留可加上 `--keep-databases`。
+
+如果看到 `PostgreSQL server does not have pgvector installed`，代表目前 `DATABASE_URL` 連到的 PostgreSQL 不是 pgvector 版本。請改用專案 Docker Compose 的 `pgvector/pgvector:pg16`，或在該 PostgreSQL server 安裝 pgvector。
 
 若要進一步確認館藏匯入時已把 768 維 embedding 寫入 `catalog_books.embedding`，請先確認 `.env` 已設定 `GEMINI_API_KEY`，再執行館藏匯入，最後執行：
 
