@@ -27,7 +27,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
         body: JSON.stringify([
           {
             id: 1,
-            filename: 'history_catalog.csv',
+            source_file: 'history_catalog.csv',
             records_count: 120,
             imported_at: '2026-06-19T12:00:00Z',
             status: 'success',
@@ -233,7 +233,7 @@ test.describe('Smart Curation System E2E Workflow', () => {
 
     // Check successful import message and table row updates
     await expect(page.locator('.ant-message-success:has-text("成功匯入 50 筆館藏記錄")')).toBeVisible();
-    await expect(page.locator('.ant-table-row').first()).toContainText('catalog.csv');
+    await expect(page.locator('.ant-table-row').first()).toContainText('history_catalog.csv');
 
     // ----------------------------------------------------
     // STEP 3: AI Theme Generation Flow
