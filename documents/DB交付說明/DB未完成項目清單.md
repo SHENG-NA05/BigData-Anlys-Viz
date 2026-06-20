@@ -142,7 +142,7 @@
 - [x] 補上 pgvector 查詢的單元測試或整合測試
 - [x] 補上 pgvector migration schema 驗證腳本與說明文件
 - [x] 補上 pgvector 匯入驗證說明文件
-- [ ] 補上 pgvector 查詢驗證說明文件
+- [x] 補上 pgvector 查詢驗證工具與說明文件
 
 ## 建議下一步
 

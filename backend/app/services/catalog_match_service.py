@@ -24,18 +24,6 @@ KEYWORD_CLASSIFICATION_PREFIXES = {
 }
 
 
-def _cosine_similarity(v1: list[float], v2: list[float]) -> float:
-    """計算兩向量的餘弦相似度"""
-    if not v1 or not v2 or len(v1) != len(v2):
-        return 0.0
-    dot_product = sum(a * b for a, b in zip(v1, v2))
-    mag1 = math.sqrt(sum(a * a for a in v1))
-    mag2 = math.sqrt(sum(b * b for b in v2))
-    if mag1 == 0.0 or mag2 == 0.0:
-        return 0.0
-    return dot_product / (mag1 * mag2)
-
-
 def match_catalog_books(db, keywords: list[str], limit: int = 5) -> list[dict]:
     """
     匹配館藏圖書

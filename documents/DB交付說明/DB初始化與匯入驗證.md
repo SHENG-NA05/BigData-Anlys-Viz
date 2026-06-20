@@ -133,6 +133,21 @@ pgvector_schema=ok
 
 如果 `catalog_books_with_embedding=0`，通常代表匯入時沒有可用的 `GEMINI_API_KEY`，系統已降級成只寫入書目文字欄位。
 
+若要確認館藏匹配流程有實際使用 pgvector 查詢，請在已有館藏 embedding 後執行：
+
+```bash
+cd backend
+python app/db/verify_pgvector_query.py --keywords AI 資料
+```
+
+成功時會看到至少一筆 `match_reason` 包含 `pgvector語意相似度`，最後輸出：
+
+```text
+pgvector_query=ok
+```
+
+若出現 `catalog matching did not use pgvector semantic results`，代表目前流程降級成文字匹配；常見原因是沒有 `GEMINI_API_KEY`、館藏沒有 embedding，或 pgvector schema 尚未升級完成。
+
 ## 5. 本次驗證結果
 
 已執行：
