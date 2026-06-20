@@ -19,6 +19,16 @@ router = APIRouter()
 _ai_service = AIService()
 
 
+@router.get("/proposals")
+def list_proposals(db: Session = Depends(get_db)):
+    from app.crud.proposal import list_proposals as list_proposals_record
+    proposals = list_proposals_record(db)
+    return {
+        "status": "success",
+        "data": [_proposal_to_response(p) for p in proposals],
+    }
+
+
 @router.get("/proposals/{proposal_id}")
 def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
     proposal = get_proposal_record(db, proposal_id)

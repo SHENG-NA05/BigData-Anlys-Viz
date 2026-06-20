@@ -8,6 +8,8 @@ import { message } from 'antd';
 jest.mock('../services/curationService', () => ({
   curationService: {
     generateThemes: jest.fn(),
+    getThemeHistory: jest.fn(() => Promise.resolve({ data: [] })),
+    deleteTheme: jest.fn(() => Promise.resolve({ status: 'success' })),
   },
 }));
 
@@ -16,6 +18,14 @@ jest.mock('../services/proposalService', () => ({
   proposalService: {
     createProposal: jest.fn(),
     getProposal: jest.fn(),
+    listProposals: jest.fn(() => Promise.resolve({ data: [] })),
+  },
+}));
+
+// Mock catalogService
+jest.mock('../services/catalogService', () => ({
+  catalogService: {
+    matchCatalog: jest.fn(),
   },
 }));
 
@@ -51,7 +61,7 @@ describe('CurationThemeGenerator Component', () => {
       outline: '展區規劃包括：AI 發展史。',
       status: 'draft',
     };
-    curationService.generateThemes.mockResolvedValue(mockTheme);
+    curationService.generateThemes.mockResolvedValue([mockTheme]);
 
     render(<CurationThemeGenerator />);
 
@@ -84,7 +94,7 @@ describe('CurationThemeGenerator Component', () => {
       outline: '展區規劃包括：AI 發展史。',
       status: 'draft',
     };
-    curationService.generateThemes.mockResolvedValue(mockTheme);
+    curationService.generateThemes.mockResolvedValue([mockTheme]);
 
     render(<CurationThemeGenerator />);
 
@@ -101,9 +111,8 @@ describe('CurationThemeGenerator Component', () => {
     const card = screen.getByText('AI 智慧特展').closest('.ant-card-hoverable');
     fireEvent.click(card);
 
-    // Verify detail section renders json
-    expect(screen.getByText(/選擇的主題詳情/i)).toBeInTheDocument();
-    expect(screen.getByText(/"title": "AI 智慧特展"/i)).toBeInTheDocument();
+    // Verify detail section renders correctly
+    expect(screen.getByText(/選擇的主題詳情：AI 智慧特展/i)).toBeInTheDocument();
   });
 
   test('deletes a theme card on delete click', async () => {
@@ -112,7 +121,7 @@ describe('CurationThemeGenerator Component', () => {
       outline: '展區規劃包括：AI 發展史。',
       status: 'draft',
     };
-    curationService.generateThemes.mockResolvedValue(mockTheme);
+    curationService.generateThemes.mockResolvedValue([mockTheme]);
 
     const { container } = render(<CurationThemeGenerator />);
 

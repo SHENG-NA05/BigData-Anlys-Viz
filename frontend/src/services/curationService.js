@@ -30,15 +30,16 @@ export const curationService = {
         year: 2026
       })
 
-      if (response.data && response.data.status === 'success' && Array.isArray(response.data.data) && response.data.data.length > 0) {
-        return {
-          theme_id: response.data.data[0].theme_id,
-          title: response.data.data[0].title,
-          outline: response.data.data[0].outline,
+      if (response.data && response.data.status === 'success' && Array.isArray(response.data.data)) {
+        return response.data.data.map(theme => ({
+          theme_id: theme.theme_id,
+          title: theme.title,
+          outline: theme.outline,
+          target_audience: theme.target_audience || '一般讀者',
           status: 'draft'
-        }
+        }))
       }
-      return response.data
+      return []
     } catch (error) {
       throw error
     }

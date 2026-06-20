@@ -98,6 +98,11 @@ def get_history(
                 "theme_id": theme.theme_id,
                 "curation_type": theme.curation_type,
                 "title": theme.title,
+                "outline": theme.outline,
+                "target_audience": theme.target_audience,
+                "keywords": theme.keywords,
+                "prompt": theme.prompt,
+                "year": theme.year,
                 "create_time": theme.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             }
             for theme in themes

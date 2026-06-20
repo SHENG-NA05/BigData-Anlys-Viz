@@ -10,6 +10,9 @@ jest.mock('../services/proposalService', () => ({
     exportToWord: jest.fn(),
     exportToPdf: jest.fn(),
     matchCatalog: jest.fn(),
+    getProposal: jest.fn(),
+    listProposals: jest.fn(() => Promise.resolve({ data: [] })),
+    updateProposal: jest.fn(),
   },
 }));
 

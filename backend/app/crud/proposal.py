@@ -27,3 +27,8 @@ def update_proposal(
     db.commit()
     db.refresh(proposal)
     return proposal
+
+
+def list_proposals(db: Session) -> list[Proposal]:
+    return db.query(Proposal).order_by(Proposal.updated_at.desc()).all()
+

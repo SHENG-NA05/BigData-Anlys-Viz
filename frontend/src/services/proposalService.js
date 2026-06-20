@@ -73,4 +73,15 @@ export const proposalService = {
       throw error
     }
   },
+
+  // 獲取企劃書列表
+  listProposals: async () => {
+    try {
+      const response = await apiClient.get('/proposals')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
 }
+

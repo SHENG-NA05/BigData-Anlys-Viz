@@ -4,11 +4,16 @@ from app.api.endpoints.curation import get_history
 
 
 class ThemeRecord:
-    def __init__(self, theme_id, curation_type, title, created_at):
+    def __init__(self, theme_id, curation_type, title, created_at, outline=None, target_audience=None, keywords=None, prompt=None, year=2026):
         self.theme_id = theme_id
         self.curation_type = curation_type
         self.title = title
         self.created_at = created_at
+        self.outline = outline or "Mock Outline"
+        self.target_audience = target_audience or "Mock Audience"
+        self.keywords = keywords or []
+        self.prompt = prompt
+        self.year = year
 
 
 class FakeQuery:

@@ -1,20 +1,77 @@
-import React, { useState } from 'react'
-import { Card, Form, Input, Button, Space, Row, Col, message, Spin, Tag, Empty } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Card, Form, Input, Button, Space, Row, Col, message, Spin, Tag, Empty, Divider } from 'antd'
 import { SendOutlined, DeleteOutlined, CopyOutlined } from 'antd/icons'
 import { useNavigate } from 'react-router-dom'
 import { curationService } from '../../../services/curationService'
 import { proposalService } from '../../../services/proposalService'
+import { catalogService } from '../../../services/catalogService'
 import './CurationThemeGenerator.css'
 
 const CurationThemeGenerator = () => {
   const [form] = Form.useForm()
   const [themes, setThemes] = useState([])
   const [loading, setLoading] = useState(false)
+  const [compareLoading, setCompareLoading] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState(null)
+  const [matchedBooks, setMatchedBooks] = useState([])
   const navigate = useNavigate()
 
-  const handleCompareCatalog = () => {
-    message.success('已匹配 5 本館藏')
+  useEffect(() => {
+    const loadThemes = async () => {
+      try {
+        const result = await curationService.getThemeHistory()
+        if (result && result.data) {
+          const list = result.data.map((t, idx) => ({
+            id: t.theme_id || idx,
+            theme_id: t.theme_id,
+            title: t.title,
+            outline: t.outline,
+            target_audience: t.target_audience,
+            keywords: t.keywords,
+            status: 'AI 生成'
+          }))
+          setThemes(list)
+        }
+      } catch (error) {
+        console.error(error)
+      }
+    }
+    loadThemes()
+  }, [])
+
+  useEffect(() => {
+    setMatchedBooks([])
+  }, [selectedTheme])
+
+  const handleCompareCatalog = async () => {
+    if (!selectedTheme) {
+      message.warning('請先選擇一個策展主題')
+      return
+    }
+
+    setCompareLoading(true)
+    try {
+      const keywords = [
+        selectedTheme.title,
+        selectedTheme.outline || ''
+      ]
+      if (selectedTheme.keywords && Array.isArray(selectedTheme.keywords)) {
+        keywords.push(...selectedTheme.keywords)
+      }
+
+      const result = await catalogService.matchCatalog(keywords)
+      if (result && result.status === 'success') {
+        setMatchedBooks(result.data || [])
+        message.success(`已成功比對，匹配到 ${result.data?.length || 0} 本相關館藏`)
+      } else {
+        message.error('比對館藏失敗')
+      }
+    } catch (error) {
+      console.error(error)
+      message.error('比對館藏服務錯誤，請確認已匯入館藏資料且資料庫運行中')
+    } finally {
+      setCompareLoading(false)
+    }
   }
 
   const handleExportToProposal = async () => {
@@ -60,7 +117,13 @@ const CurationThemeGenerator = () => {
         values.holidays,
         values.custom_prompt
       )
-      setThemes([...themes, { id: Date.now(), ...response }])
+      
+      const newThemes = response.map((theme, index) => ({
+        id: `${Date.now()}-${index}`,
+        ...theme
+      }))
+
+      setThemes([...themes, ...newThemes])
       message.success('策展主題生成成功！')
       form.resetFields()
     } catch (error) {
@@ -71,9 +134,20 @@ const CurationThemeGenerator = () => {
     }
   }
 
-  const handleDeleteTheme = (id) => {
-    setThemes(themes.filter((t) => t.id !== id))
-    message.success('主題已刪除')
+  const handleDeleteTheme = async (theme) => {
+    try {
+      if (theme.theme_id) {
+        await curationService.deleteTheme(theme.theme_id)
+      }
+      setThemes(themes.filter((t) => t.id !== theme.id))
+      message.success('主題已刪除')
+      if (selectedTheme?.id === theme.id) {
+        setSelectedTheme(null)
+      }
+    } catch (error) {
+      console.error(error)
+      message.error('刪除主題失敗')
+    }
   }
 
   return (
@@ -179,7 +253,7 @@ const CurationThemeGenerator = () => {
                             <Tag color="green">{theme.status || '待處理'}</Tag>
                           </Space>
                         </Col>
-                        <Col>
+                        <Col style={{ marginLeft: '16px' }}>
                           <Space>
                             <Button
                               type="text"
@@ -193,7 +267,10 @@ const CurationThemeGenerator = () => {
                               type="text"
                               danger
                               icon={<DeleteOutlined />}
-                              onClick={() => handleDeleteTheme(theme.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTheme(theme);
+                              }}
                             />
                           </Space>
                         </Col>
@@ -209,21 +286,106 @@ const CurationThemeGenerator = () => {
 
       {selectedTheme && (
         <Card 
-          title="選擇的主題詳情" 
-          style={{ marginTop: '24px' }} 
+          title={<strong style={{ fontSize: '18px' }}>🎨 選擇的主題詳情：{selectedTheme.title}</strong>}
+          style={{ marginTop: '24px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} 
           bordered={false}
           extra={
             <Space>
-              <Button type="default" onClick={handleCompareCatalog}>
+              <Button 
+                type="default" 
+                onClick={handleCompareCatalog}
+                loading={compareLoading}
+              >
                 比對館藏庫
               </Button>
-              <Button type="primary" onClick={handleExportToProposal}>
+              <Button 
+                type="primary" 
+                onClick={handleExportToProposal}
+                loading={loading}
+              >
                 拋轉至企劃中心
               </Button>
             </Space>
           }
         >
-          <pre className="theme-detail">{JSON.stringify(selectedTheme, null, 2)}</pre>
+          <div style={{ padding: '8px', fontSize: '14px', lineHeight: '2' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>📋 策展規劃大綱：</strong>
+              <div style={{ 
+                background: '#f9f9f9', 
+                padding: '12px 16px', 
+                borderRadius: '8px', 
+                marginTop: '8px',
+                borderLeft: '4px solid #1890ff',
+                color: '#434343'
+              }}>
+                {selectedTheme.outline || '（無大綱）'}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <strong>👥 預估受眾：</strong>
+              <Tag color="purple" style={{ marginLeft: '8px', fontSize: '13px', padding: '2px 8px' }}>
+                {selectedTheme.target_audience || '一般讀者'}
+              </Tag>
+            </div>
+
+            {selectedTheme.keywords && selectedTheme.keywords.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <strong>🏷️ 關鍵字：</strong>
+                <Space wrap style={{ marginLeft: '8px' }}>
+                  {selectedTheme.keywords.map((kw, i) => (
+                    <Tag key={i} color="blue">{kw}</Tag>
+                  ))}
+                </Space>
+              </div>
+            )}
+          </div>
+
+          {matchedBooks && matchedBooks.length > 0 && (
+            <>
+              <Divider orientation="left">📚 推薦比對符合館藏 ({matchedBooks.length})</Divider>
+              <div className="matched-books-section" style={{ marginTop: '16px' }}>
+                <Row gutter={[16, 16]}>
+                  {matchedBooks.map((book, idx) => (
+                    <Col xs={24} md={12} key={book.book_id || idx}>
+                      <Card 
+                        size="small" 
+                        bordered
+                        style={{ 
+                          borderRadius: '8px', 
+                          background: '#fafafa',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}
+                        title={<strong style={{ fontSize: '15px', color: '#262626' }}>{book.title}</strong>}
+                        extra={<Tag color="blue" style={{ fontSize: '12px', fontWeight: 'bold' }}>評分: {book.match_score}</Tag>}
+                      >
+                        <div style={{ fontSize: '13px', lineHeight: '1.8', color: '#595959' }}>
+                          <div><strong>作者：</strong>{book.author || '未知'}</div>
+                          <div><strong>ISBN：</strong>{book.isbn}</div>
+                          <div><strong>分類號：</strong><Tag color="cyan" style={{ border: 'none' }}>{book.classification_no}</Tag></div>
+                          {book.match_reason && (
+                            <div style={{ 
+                              marginTop: '8px', 
+                              fontSize: '12px', 
+                              color: '#8c8c8c', 
+                              background: '#f5f5f5', 
+                              padding: '6px 10px', 
+                              borderRadius: '4px', 
+                              borderLeft: '3px solid #1890ff',
+                              lineHeight: '1.5'
+                            }}>
+                              <strong>匹配原因：</strong>{book.match_reason}
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            </>
+          )}
         </Card>
       )}
     </div>

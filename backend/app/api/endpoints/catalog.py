@@ -6,6 +6,7 @@ import csv
 from app.db.session import get_db
 from app.db.models import CatalogBook
 from app.services.catalog_service import CatalogImportError, CatalogService
+from app.schemas.catalog import CatalogMatchRequest
 
 router = APIRouter()
 
@@ -90,3 +91,13 @@ def get_upload_history(db: Session = Depends(get_db)):
         }
         for r in results
     ]
+
+
+@router.post("/catalog/match")
+def match_books(request: CatalogMatchRequest, db: Session = Depends(get_db)):
+    from app.services.catalog_match_service import match_catalog_books
+    results = match_catalog_books(db, request.keywords, limit=request.limit)
+    return {
+        "status": "success",
+        "data": results
+    }

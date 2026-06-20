@@ -42,4 +42,18 @@ export const catalogService = {
       throw error
     }
   },
+
+  // 比對館藏
+  matchCatalog: async (keywords, limit = 5) => {
+    try {
+      const response = await apiClient.post('/catalog/match', {
+        keywords,
+        limit,
+      })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
 }
+

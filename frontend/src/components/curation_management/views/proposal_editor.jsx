@@ -13,23 +13,53 @@ const ProposalEditor = () => {
   const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem('exported_proposal')
-    if (stored) {
+    const loadProposals = async () => {
       try {
-        const proposal = JSON.parse(stored)
-        setProposals([proposal])
-        setSelectedProposal(proposal)
-        form.setFieldsValue({
-          title: proposal.title,
-          themeId: proposal.themeId,
-        })
-        setContent(proposal.content)
-        // Clear it so it doesn't reload next time
-        localStorage.removeItem('exported_proposal')
-      } catch (e) {
-        console.error(e)
+        const result = await proposalService.listProposals()
+        let dbList = []
+        if (result && result.status === 'success' && Array.isArray(result.data)) {
+          dbList = result.data.map(p => ({
+            id: p.proposal_id,
+            title: p.title,
+            content: p.content,
+            themeId: p.theme_id,
+            createdAt: p.created_at,
+            status: p.status,
+            matched_books: p.matched_books || [],
+          }))
+        }
+
+        const stored = localStorage.getItem('exported_proposal')
+        if (stored) {
+          try {
+            const proposal = JSON.parse(stored)
+            localStorage.removeItem('exported_proposal')
+            
+            // Remove any existing copy in dbList to avoid duplicate
+            const filteredDbList = dbList.filter(p => p.id !== proposal.id)
+            const combinedList = [proposal, ...filteredDbList]
+            setProposals(combinedList)
+            setSelectedProposal(proposal)
+            form.setFieldsValue({
+              title: proposal.title,
+              themeId: proposal.themeId,
+            })
+            setContent(proposal.content)
+            return
+          } catch (e) {
+            console.error('Error parsing stored proposal:', e)
+          }
+        }
+
+        setProposals(dbList)
+        if (dbList.length > 0) {
+          handleLoadProposal(dbList[0])
+        }
+      } catch (error) {
+        console.error('Failed to load proposals:', error)
       }
     }
+    loadProposals()
   }, [])
 
   const handleSaveProposal = async (values) => {
