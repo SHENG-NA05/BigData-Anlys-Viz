@@ -1,7 +1,7 @@
-import math
 import logging
 from app.crud.catalog import list_catalog_books
 from app.db.models import CatalogBook
+from app.services.ai_service import AIService
 
 logger = logging.getLogger(__name__)
 
@@ -40,55 +40,40 @@ def match_catalog_books(db, keywords: list[str], limit: int = 5) -> list[dict]:
     """
     匹配館藏圖書
 
-    1. 基於關鍵字與分類號進行初篩排名
-    2. (選配) 針對前 10 名的書籍，呼叫 Gemini Embedding API 進行輕量語意相似度加權與重新排名
+    1. 優先使用 pgvector 對已匯入的館藏 embedding 進行 cosine distance 查詢。
+    2. 若 AI embedding 或 pgvector 查詢不可用，降級使用關鍵字與分類號文字匹配。
     """
-    books = list_catalog_books(db, skip=0, limit=500)
-    ranked_books = rank_catalog_books(books, keywords)
-
-    if not ranked_books:
+    normalized_keywords = _dedupe_keywords(keywords)
+    if not normalized_keywords:
         return []
 
-    # 初篩前 10 名做為候選進行語意重排
-    candidates = ranked_books[:10]
-
     try:
-        from app.services.ai_service import AIService
         ai_service = AIService()
-        
-        # 組合去重後的關鍵字作為查詢句
-        query_text = " ".join(_dedupe_keywords(keywords))
+        query_text = " ".join(normalized_keywords)
         query_emb = ai_service.get_embedding(query_text)
-
         if query_emb:
-            logger.info("啟用輕量語意比對進行重排 (查詢: %s)", query_text)
-            reranked_candidates = []
-            for book, score, reasons in candidates:
-                book_text = f"{book.title} {book.summary or ''}"
-                book_emb = ai_service.get_embedding(book_text)
-
-                if book_emb:
-                    similarity = _cosine_similarity(query_emb, book_emb)
-                    if similarity > 0.25:
-                        # 語意分數加權（最大加 5 分）
-                        semantic_boost = round(similarity * 5.0, 2)
-                        new_score = round(score + semantic_boost, 2)
-                        new_reasons = list(reasons)
-                        new_reasons.append(f"語意相似度: {int(similarity * 100)}% (+{semantic_boost}分)")
-                        reranked_candidates.append((book, new_score, new_reasons))
-                        continue
-                
-                reranked_candidates.append((book, score, reasons))
-
-            # 依新總分降序重新排序
-            candidates = sorted(
-                reranked_candidates,
-                key=lambda item: (-item[1], -(item[0].publication_year or 0), item[0].title)
-            )
+            vector_matches = query_catalog_books_by_vector(db, query_emb, limit)
+            if vector_matches:
+                logger.info("啟用 pgvector 館藏語意匹配 (查詢: %s)", query_text)
+                return vector_matches
     except Exception as exc:
-        logger.warning("語意比對重排失敗，自動降級使用純文字匹配：%s", str(exc))
+        logger.warning("pgvector 語意匹配失敗，自動降級使用純文字匹配：%s", str(exc))
 
-    return [_book_to_match_result(book, score, reasons) for book, score, reasons in candidates[:limit]]
+    books = list_catalog_books(db, skip=0, limit=500)
+    ranked_books = rank_catalog_books(books, normalized_keywords)
+    return [_book_to_match_result(book, score, reasons) for book, score, reasons in ranked_books[:limit]]
+
+
+def query_catalog_books_by_vector(db, query_embedding: list[float], limit: int = 5) -> list[dict]:
+    distance = CatalogBook.embedding.cosine_distance(query_embedding).label("distance")
+    rows = (
+        db.query(CatalogBook, distance)
+        .filter(CatalogBook.embedding.isnot(None))
+        .order_by(distance, CatalogBook.publication_year.desc().nullslast(), CatalogBook.title)
+        .limit(limit)
+        .all()
+    )
+    return [_book_to_vector_match_result(book, distance_value) for book, distance_value in rows]
 
 
 def rank_catalog_books(books: list[CatalogBook], keywords: list[str]) -> list[tuple[CatalogBook, float, list[str]]]:
@@ -140,6 +125,21 @@ def _score_book(book: CatalogBook, keywords: list[str]) -> tuple[float, list[str
 def _matches_classification(keyword: str, classification_no: str) -> bool:
     prefixes = KEYWORD_CLASSIFICATION_PREFIXES.get(keyword, [])
     return any(classification_no.startswith(prefix) for prefix in prefixes)
+
+
+def _book_to_vector_match_result(book: CatalogBook, distance: float | None) -> dict:
+    similarity = _distance_to_similarity(distance)
+    return _book_to_match_result(
+        book,
+        round(similarity * 100, 2),
+        [f"pgvector語意相似度: {int(similarity * 100)}%"],
+    )
+
+
+def _distance_to_similarity(distance: float | None) -> float:
+    if distance is None:
+        return 0.0
+    return max(0.0, min(1.0, 1.0 - float(distance)))
 
 
 def _book_to_match_result(book: CatalogBook, score: float, reasons: list[str]) -> dict:
