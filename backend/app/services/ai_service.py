@@ -366,16 +366,31 @@ class AIService:
         if self._use_openrouter or self._client is None:
             return [None] * len(texts)
 
-        try:
-            response = self._client.models.embed_content(
-                model="gemini-embedding-2",
-                contents=[(t.strip() if t else " ") for t in texts],
-                config=types.EmbedContentConfig(output_dimensionality=768)
-            )
-            if response.embeddings:
-                return [emb.values for emb in response.embeddings]
-        except Exception as exc:
-            logger.warning("批次取得語意向量失敗：%s", str(exc))
+        import time
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                contents_list = [
+                    types.Content(parts=[types.Part.from_text(text=t.strip() if t else " ")])
+                    for t in texts
+                ]
+                response = self._client.models.embed_content(
+                    model="gemini-embedding-2",
+                    contents=contents_list,
+                    config=types.EmbedContentConfig(output_dimensionality=768)
+                )
+                if response.embeddings:
+                    return [emb.values for emb in response.embeddings]
+            except Exception as exc:
+                is_rate_limit = "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc)
+                if is_rate_limit and attempt < max_retries:
+                    sleep_time = 15.0 * attempt
+                    logger.warning("批次取得語意向量遭遇頻率限制 (429)，將於 %d 秒後進行第 %d 次重試...", sleep_time, attempt + 1)
+                    time.sleep(sleep_time)
+                    continue
+                else:
+                    logger.warning("批次取得語意向量失敗：%s", str(exc))
+                    break
 
         return [None] * len(texts)
 
