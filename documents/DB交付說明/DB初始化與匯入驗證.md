@@ -85,7 +85,37 @@ imported_count=50
 catalog_books_total=50
 ```
 
-## 4. 本次驗證結果
+## 4. pgvector schema 驗證
+
+若要確認 Alembic migration 已正確升級到 pgvector schema，先執行：
+
+```bash
+cd backend
+python -m alembic upgrade head
+python app/db/verify_pgvector_schema.py
+```
+
+成功時應看到：
+
+```text
+vector_extension=True
+embedding_type=vector(768)
+hnsw_index=True
+pgvector_schema=ok
+```
+
+這代表：
+
+- PostgreSQL 已啟用 `vector` extension。
+- `catalog_books.embedding` 已是 `vector(768)` 欄位。
+- `idx_catalog_books_embedding` 已使用 HNSW 與 `vector_cosine_ops` 建立索引。
+
+此驗證適用於兩種情境：
+
+- 既有資料庫從舊 schema 執行 `alembic upgrade head` 後。
+- 全新資料庫直接執行 `alembic upgrade head` 後。
+
+## 5. 本次驗證結果
 
 已執行：
 
@@ -129,7 +159,7 @@ imported_count=50
 catalog_books_total=50
 ```
 
-## 5. 使用其他 CSV
+## 6. 使用其他 CSV
 
 如果要匯入其他虛擬資料：
 
@@ -138,7 +168,7 @@ python backend/app/db/generate_fake_catalog.py --count 5000 --output data/fake_c
 python backend/app/db/verify_catalog_import.py --csv data/fake_catalog_5000.csv --clear-catalog
 ```
 
-## 6. 驗證重點
+## 7. 驗證重點
 
 執行成功後，代表以下項目通過：
 
@@ -148,8 +178,9 @@ python backend/app/db/verify_catalog_import.py --csv data/fake_catalog_5000.csv 
 - `system_settings` 預設參數已寫入。
 - `catalog_books` 可以寫入館藏資料。
 - CSV 匯入服務可以實際寫入 PostgreSQL。
+- pgvector schema 可透過 `verify_pgvector_schema.py` 確認。
 
-## 7. 常見錯誤
+## 8. 常見錯誤
 
 ### PostgreSQL 未啟動
 
