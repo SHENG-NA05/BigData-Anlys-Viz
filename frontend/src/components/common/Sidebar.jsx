@@ -1,5 +1,5 @@
 import { Layout } from 'antd'
-import { BarChart3, BookOpen, Database, LogOut, Sparkles } from 'lucide-react'
+import { BarChart3, BookOpen, Database, Home, LogOut, Sparkles } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/authService'
 import './Sidebar.css'
@@ -7,7 +7,7 @@ import './Sidebar.css'
 const { Sider } = Layout
 
 const phaseNavigation = [
-  { path: '/', title: '策展前', subtitle: 'AI 主題發想與館藏媒合', icon: Sparkles },
+  { path: '/curation', title: '策展前', subtitle: 'AI 主題發想與館藏媒合', icon: Sparkles },
   { path: '/proposal', title: '策展中', subtitle: '企劃編輯、媒合與匯出', icon: BookOpen },
   { path: '/dashboard', title: '策展後', subtitle: '效益分析與系統設定', icon: BarChart3 },
 ]
@@ -55,6 +55,13 @@ const Sidebar = () => {
       </div>
 
       <div className="ra-sidebar-scroll">
+        <NavigationGroup
+          label="工作台"
+          items={[{ path: '/', title: '首頁', subtitle: '進度、數據與快速入口', icon: Home }]}
+          currentPath={location.pathname}
+          onNavigate={navigate}
+        />
+        <div className="ra-side-divider" />
         <NavigationGroup
           label="策展流程"
           items={phaseNavigation}

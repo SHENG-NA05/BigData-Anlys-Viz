@@ -7,6 +7,7 @@ import ProposalEditor from './components/curation_management/views/proposal_edit
 import DashboardView from './components/curation_management/views/dashboard_view'
 import CatalogImport from './components/curation_management/views/catalog_import'
 import LoginView from './components/curation_management/views/login_view'
+import HomeView from './components/curation_management/views/home_view'
 import { authService } from './services/authService'
 import './App.css'
 
@@ -28,7 +29,8 @@ function App() {
             element={
               <ProtectedLayout>
                 <Routes>
-                  <Route path="/" element={<CurationThemeGenerator />} />
+                  <Route path="/" element={<HomeView />} />
+                  <Route path="/curation" element={<CurationThemeGenerator />} />
                   <Route path="/proposal" element={<ProposalEditor />} />
                   <Route path="/dashboard" element={<DashboardView />} />
                   <Route path="/import" element={<CatalogImport />} />
