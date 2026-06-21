@@ -36,6 +36,9 @@ test.describe('Smart Curation System real backend workflow', () => {
 
     await page.getByRole('button', { name: /主題發想/ }).click()
     await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
+    await page.getByText('節慶策展', { exact: true }).click()
+    await page.getByLabel('節慶或檔期').fill('世界閱讀日')
+    await page.getByLabel('活動年份').fill('2027')
     await page.getByLabel('關鍵詞').fill(`AI、資料閱讀、${runId}`)
     await page.getByLabel('補充需求').fill('產生適合公共圖書館的策展主題')
     const initialThemeCount = await page.locator('.theme-option-card').count()
@@ -56,7 +59,9 @@ test.describe('Smart Curation System real backend workflow', () => {
 
     const titleInput = page.getByLabel('標題')
     await expect(titleInput).not.toHaveValue('')
+    await expect(page.locator('.ql-toolbar')).toBeVisible()
     await titleInput.fill(`E2E 企劃 ${runId}`)
+    await page.locator('.ql-editor').fill(`世界閱讀日策展企劃 ${runId}`)
     const updateResponse = page.waitForResponse((response) => (
       /\/proposals\/[^/]+$/.test(new URL(response.url()).pathname) && response.request().method() === 'PUT'
     ))
@@ -93,6 +98,14 @@ test.describe('Smart Curation System real backend workflow', () => {
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByRole('heading', { name: '工時與成本效益' })).toBeVisible()
     await expect(page.getByText('累計節省工時')).toBeVisible()
+
+    await page.getByRole('button', { name: '設定參數' }).click()
+    await expect(page.getByRole('dialog', { name: '效益計算參數' })).toBeVisible()
+    const settingsResponse = page.waitForResponse((response) => (
+      response.url().endsWith('/dashboard/settings') && response.request().method() === 'POST'
+    ))
+    await page.getByRole('button', { name: '儲存參數' }).click()
+    expect((await settingsResponse).status()).toBe(200)
 
     await page.getByRole('button', { name: '登出' }).click()
     await expect(page).toHaveURL(/\/login$/)

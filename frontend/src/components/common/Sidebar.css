@@ -203,3 +203,49 @@
   color: #9a9389;
   font-size: 12px;
 }
+
+@media (max-width: 780px) {
+  .ra-sidebar {
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    flex: 0 0 76px !important;
+  }
+
+  .ra-brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .ra-brand > span:last-child,
+  .ra-side-nav button > span,
+  .ra-side-nav i {
+    display: none;
+  }
+
+  .ra-sidebar-scroll {
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+
+  .ra-side-nav {
+    padding: 0;
+  }
+
+  .ra-side-nav button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-height: 52px;
+    padding: 10px;
+  }
+
+  .ra-sidebar-footer {
+    right: 6px;
+    left: 6px;
+  }
+
+  .ra-sidebar-footer .ra-logout {
+    gap: 0;
+    font-size: 0;
+  }
+}

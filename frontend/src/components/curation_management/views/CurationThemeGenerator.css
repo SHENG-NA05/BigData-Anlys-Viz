@@ -589,6 +589,22 @@
   font-weight: 800;
 }
 
+.prompt-conditional-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.32fr);
+  gap: 12px;
+}
+
+.prompt-conditional-fields > div {
+  display: grid;
+  gap: 8px;
+}
+
+.theme-skeleton-card {
+  min-height: 210px;
+  cursor: default;
+}
+
 .prompt-panel input,
 .prompt-panel textarea {
   width: 100%;
@@ -650,6 +666,10 @@
   .theme-card-grid,
   .ra-two-column,
   .ra-insight-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-conditional-fields {
     grid-template-columns: 1fr;
   }
 

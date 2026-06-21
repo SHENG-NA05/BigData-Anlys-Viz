@@ -4,6 +4,17 @@ import { message } from 'antd'
 import ProposalEditor from '../components/curation_management/views/proposal_editor'
 import { proposalService } from '../services/proposalService'
 
+jest.mock('react-quill-new', () => {
+  const React = require('react')
+  return function MockReactQuill({ value, onChange }) {
+    return React.createElement('textarea', {
+      'aria-label': '企劃內容',
+      value,
+      onChange: (event) => onChange(event.target.value),
+    })
+  }
+})
+
 jest.mock('../services/proposalService', () => ({
   proposalService: {
     listProposals: jest.fn(),
@@ -41,6 +52,7 @@ describe('ProposalEditor API integration', () => {
   test('loads proposals from the backend', async () => {
     renderPage()
     expect(await screen.findByDisplayValue('真實企劃書')).toBeInTheDocument()
+    expect(screen.getByLabelText('企劃內容')).toHaveValue('資料庫企劃內容')
     expect(proposalService.listProposals).toHaveBeenCalled()
   })
 
@@ -49,10 +61,13 @@ describe('ProposalEditor API integration', () => {
     renderPage()
     const titleInput = await screen.findByDisplayValue('真實企劃書')
     fireEvent.change(titleInput, { target: { value: '更新後標題' } })
+    fireEvent.change(screen.getByLabelText('企劃內容'), {
+      target: { value: '<p><strong>更新內容</strong></p><script>alert(1)</script>' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /^儲存$/ }))
 
     await waitFor(() => expect(proposalService.updateProposal).toHaveBeenCalledWith(
-      'P-1', '更新後標題', '資料庫企劃內容', 'draft',
+      'P-1', '更新後標題', '<p><strong>更新內容</strong></p>', 'draft',
     ))
     expect(message.success).toHaveBeenCalledWith('企劃書已儲存至資料庫')
   })

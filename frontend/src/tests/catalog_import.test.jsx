@@ -22,11 +22,12 @@ describe('CatalogImport RA workspace', () => {
   })
 
   test('renders data import page', async () => {
-    render(<CatalogImport />)
+    const { container } = render(<CatalogImport />)
 
     expect(screen.getByRole('heading', { name: '資料庫與素材管理' })).toBeInTheDocument()
     expect(screen.getByText('成功匯入檔案')).toBeInTheDocument()
     expect(screen.getByText('拖曳檔案到此處，或點擊選擇檔案')).toBeInTheDocument()
+    expect(container.querySelector('input[type="file"]')).toHaveAttribute('accept', '.csv,.xlsx')
 
     await waitFor(() => {
       expect(catalogService.getUploadHistory).toHaveBeenCalled()

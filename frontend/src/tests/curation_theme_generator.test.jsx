@@ -72,7 +72,34 @@ describe('CurationThemeGenerator API integration', () => {
 
     expect((await screen.findAllByText('AI 共創實驗室')).length).toBeGreaterThan(0)
     expect(curationService.generateThemes).toHaveBeenCalled()
+    expect(curationService.generateThemes).toHaveBeenCalledWith(expect.objectContaining({
+      curationType: 'trend',
+      keywords: 'AI、共創',
+    }))
     expect(message.success).toHaveBeenCalledWith('已產生 1 個主題')
+  })
+
+  test('sends festival and year settings to the backend service', async () => {
+    curationService.generateThemes.mockResolvedValue([{
+      theme_id: 'T-FESTIVAL',
+      title: '閱讀月光節',
+      outline: '中秋節主題閱讀策展。',
+      target_audience: '親子讀者',
+      keywords: ['中秋', '閱讀'],
+    }])
+
+    renderPage()
+    fireEvent.click(screen.getByText('節慶策展'))
+    fireEvent.change(screen.getByLabelText('節慶或檔期'), { target: { value: '中秋節' } })
+    fireEvent.change(screen.getByLabelText('活動年份'), { target: { value: '2027' } })
+    fireEvent.change(screen.getByLabelText('關鍵詞'), { target: { value: '中秋、閱讀' } })
+    fireEvent.click(screen.getByRole('button', { name: /產生主題/ }))
+
+    await waitFor(() => expect(curationService.generateThemes).toHaveBeenCalledWith(expect.objectContaining({
+      curationType: 'festival',
+      festival: '中秋節',
+      year: 2027,
+    })))
   })
 
   test('does not create fake themes when generation fails', async () => {

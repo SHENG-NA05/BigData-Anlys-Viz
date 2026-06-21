@@ -581,6 +581,41 @@
   line-height: 1.65;
 }
 
+.proposal-rich-editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+}
+
+.proposal-rich-editor .ql-toolbar {
+  border-color: #d9cdbd;
+  border-radius: 8px 8px 0 0;
+  background: #fbf8f3;
+  white-space: normal;
+}
+
+.proposal-rich-editor .ql-container {
+  height: auto;
+  min-height: 360px;
+  border-color: #d9cdbd;
+  border-radius: 0 0 8px 8px;
+  font: inherit;
+}
+
+.proposal-rich-editor .ql-editor {
+  min-height: 360px;
+  color: #332f29;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.proposal-rich-editor .ql-editor h1,
+.proposal-rich-editor .ql-editor h2,
+.proposal-rich-editor .ql-editor h3 {
+  letter-spacing: 0;
+}
+
 @media (max-width: 1320px) {
   .proposal-page {
     grid-template-columns: 1fr;

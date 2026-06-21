@@ -1,315 +1,203 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
-test.describe('Smart Curation System E2E Workflow', () => {
+const json = (route, body, status = 200) => route.fulfill({
+  status,
+  contentType: 'application/json',
+  body: JSON.stringify(body),
+})
+
+const proposal = {
+  proposal_id: 'P001',
+  theme_id: 'T001',
+  title: '世界閱讀日智慧策展',
+  content: '<h1>策展宗旨與目標</h1><p>推廣閱讀與數位素養。</p>',
+  matched_books: [],
+  status: 'draft',
+  created_at: '2026-06-21 10:00:00',
+  updated_at: '2026-06-21 10:00:00',
+}
+
+test.describe('Smart Curation frontend workflow', () => {
   test.beforeEach(async ({ page }) => {
-    // Intercept and mock API requests to isolate frontend E2E from backend dependencies
+    await page.route('**/curation_management/backend/**', async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const path = url.pathname.replace('/curation_management/backend', '')
+      const method = request.method()
 
-    // 1. Authentication Mock
-    await page.route('**/curation_management/backend/login', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
+      if (path === '/login' && method === 'POST') {
+        return json(route, {
           status: 'success',
-          access_token: 'mock-jwt-token-abcd-1234',
+          access_token: 'frontend-isolation-token',
           token_type: 'bearer',
-          username: 'test-curator',
+          username: 'demo_curator',
           role: 'curator',
-        }),
-      });
-    });
-
-    // 2. Catalog Import Mocks
-    await page.route('**/catalog/upload-history', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            id: 1,
-            source_file: 'history_catalog.csv',
-            records_count: 120,
-            imported_at: '2026-06-19T12:00:00Z',
-            status: 'success',
-          },
-        ]),
-      });
-    });
-
-    await page.route('**/catalog/validate', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          records_count: 50,
-        }),
-      });
-    });
-
-    await page.route('**/catalog/import', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'success',
-          records_count: 50,
-          vectorized_count: 48,
-          message: '成功匯入 50 筆館藏記錄',
-        }),
-      });
-    });
-
-    // 3. AI Theme Generation Mocks
-    await page.route('**/history', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            theme_id: 'T000',
-            title: '舊策展主題歷史',
-            outline: '舊主題的策展規劃大綱內容。',
-            target_audience: '一般市民',
-          },
-        ]),
-      });
-    });
-
-    await page.route('**/generate_themes', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          theme_id: 'T001',
-          title: 'AI 智慧科技大潮特展',
-          outline: '展區規劃包括：AI 發展史、AI 在各產業的應用，以及我們與 AI 共生的未來書籍特展。',
-          target_audience: '全體市民與大專院校學生',
-        }),
-      });
-    });
-
-    // 4. Proposal Management Mocks
-    await page.route('**/export_to_proposal', async (route) => {
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'success',
-          proposal_id: 'P001',
-          message: '已成功建立企劃書草案，請至企劃管理中心編輯。',
-        }),
-      });
-    });
-
-    // Get proposal detail
-    await page.route('**/proposals/P001', async (route) => {
-      if (route.request().method() === 'PUT') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            status: 'success',
-            data: {
-              proposal_id: 'P001',
-              title: 'AI 智慧科技大潮特展',
-              content: '<h1>E2E Test Modded Content</h1>',
-              status: 'completed',
-            },
-          }),
-        });
-      } else {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            status: 'success',
-            data: {
-              proposal_id: 'P001',
-              title: 'AI 智慧科技大潮特展',
-              content: '<h1>策展宗旨與目標</h1><p>預設擴寫企劃書內容...</p>',
-              status: 'draft',
-              theme_id: 'T001',
-            },
-          }),
-        });
+        })
       }
-    });
-
-    await page.route('**/proposals/P001/match', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
+      if (path === '/history' && method === 'GET') return json(route, { total: 0, data: [] })
+      if (path === '/rss/trends' && method === 'GET') return json(route, { status: 'success', data: ['閱讀', 'AI'] })
+      if (path === '/catalog/upload-history' && method === 'GET') {
+        return json(route, [{
+          source_file: 'history_catalog.csv',
+          records_count: 120,
+          vectorized_count: 120,
+          imported_at: '2026-06-19T12:00:00Z',
+        }])
+      }
+      if (path === '/catalog/validate' && method === 'POST') {
+        return json(route, { valid: true, records_count: 50, errors: [] })
+      }
+      if (path === '/catalog/import' && method === 'POST') {
+        return json(route, { status: 'success', imported_count: 50 })
+      }
+      if (path === '/catalog/match' && method === 'POST') {
+        return json(route, {
           status: 'success',
-          matched_count: 5,
-        }),
-      });
-    });
-
-    await page.route('**/proposals/P001/export*format=docx', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        body: Buffer.from('mock-docx-binary'),
-      });
-    });
-
-    await page.route('**/proposals/P001/export*format=pdf', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/pdf',
-        body: Buffer.from('mock-pdf-binary'),
-      });
-    });
-
-    // 5. Dashboard Mocks
-    await page.route('**/dashboard/stats*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          cumulative_hours_saved: 134.0,
-          cumulative_cost_saved: 67000.0,
+          data: [{
+            book_id: 7,
+            title: 'AI 時代的閱讀力',
+            author: '測試作者',
+            classification_no: '020',
+            match_score: 91,
+            match_reason: 'pgvector語意相似度: 91%',
+          }],
+        })
+      }
+      if (path === '/generate_themes' && method === 'POST') {
+        return json(route, {
+          status: 'success',
+          data: [{
+            theme_id: 'T001',
+            title: '世界閱讀日智慧策展',
+            outline: '以閱讀、AI 與公共知識為核心的節慶策展。',
+            target_audience: '全體市民',
+            keywords: ['閱讀', 'AI'],
+          }],
+        })
+      }
+      if (path === '/export_to_proposal' && method === 'POST') {
+        return json(route, { status: 'success', proposal_id: 'P001' })
+      }
+      if (path === '/proposals' && method === 'GET') {
+        return json(route, { status: 'success', data: [proposal] })
+      }
+      if (path === '/proposals/P001' && method === 'PUT') {
+        const body = request.postDataJSON()
+        return json(route, {
+          status: 'success',
+          data: { ...proposal, ...body, updated_at: '2026-06-21 11:00:00' },
+        })
+      }
+      if (path === '/proposals/P001/match' && method === 'POST') {
+        return json(route, {
+          status: 'success',
+          data: {
+            ...proposal,
+            matched_books: [{
+              book_id: 7,
+              title: 'AI 時代的閱讀力',
+              author: '測試作者',
+              classification_no: '020',
+              match_score: 91,
+            }],
+          },
+        })
+      }
+      if (path === '/proposals/P001/export' && method === 'GET') {
+        const format = url.searchParams.get('format')
+        return route.fulfill({
+          status: 200,
+          contentType: format === 'pdf'
+            ? 'application/pdf'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          headers: { 'Content-Disposition': `attachment; filename="proposal.${format}"` },
+          body: Buffer.from(`${format}-content`),
+        })
+      }
+      if (path === '/dashboard/stats' && method === 'GET') {
+        return json(route, {
+          cumulative_hours_saved: 134,
+          cumulative_cost_saved: 67000,
           theme_generation_count: 15,
           proposal_export_count: 24,
-          monthly_stats: [
-            { month: '1月', savedHours: 12, savedCost: 6000 },
-            { month: '2月', savedHours: 18, savedCost: 9000 },
-            { month: '3月', savedHours: 24, savedCost: 12000 },
-            { month: '4月', savedHours: 20, savedCost: 10000 },
-            { month: '5月', savedHours: 28, savedCost: 14000 },
-            { month: '6月', savedHours: 32, savedCost: 16000 },
-          ],
-        }),
-      });
-    });
-
-    await page.route('**/dashboard/settings', async (route) => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ status: 'success' }),
-        });
-      } else {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            hourly_rate: '500',
-            base_hours: '8',
-          }),
-        });
+        })
       }
-    });
-  });
+      if (path === '/dashboard/monthly-stats' && method === 'GET') {
+        return json(route, [{ month: '2026-06', hours: 42, cost: 21000 }])
+      }
+      if (path === '/dashboard/quarterly-stats' && method === 'GET') {
+        return json(route, [{ quarter: '2026-Q2', hours: 134, cost: 67000 }])
+      }
+      if (path === '/dashboard/settings' && method === 'GET') {
+        return json(route, { hourly_rate: 500, base_hours: 8 })
+      }
+      if (path === '/dashboard/settings' && method === 'POST') {
+        return json(route, { status: 'success' })
+      }
 
-  test('successfully runs complete curation user workflow', async ({ page }) => {
-    // ----------------------------------------------------
-    // STEP 1: SSO Login Flow
-    // ----------------------------------------------------
-    await page.goto('/login');
-    await expect(page.locator('h2')).toContainText('智慧策展系統');
+      return json(route, { detail: `Unhandled frontend test route: ${method} ${path}` }, 404)
+    })
+  })
 
-    // Perform SSO Login
-    await page.click('button:has-text("SSO 單一登入")');
-    await expect(page).toHaveURL('/');
+  test('runs the current UI workflow with isolated API responses', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole('button', { name: '填入測試帳密' }).click()
+    await page.getByRole('button', { name: '登入', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
 
-    // ----------------------------------------------------
-    // STEP 2: Catalog Books Import Flow
-    // ----------------------------------------------------
-    await page.click('.sidebar .ant-menu-item:has-text("館藏導入")');
-    await expect(page.locator('.page-header h1')).toContainText('館藏資料匯入中心');
-
-    // Simulate drop or upload a CSV file
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.click('.ant-upload-drag');
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles({
+    await page.getByRole('button', { name: /館藏匯入/ }).click()
+    await page.locator('input[type="file"]').setInputFiles({
       name: 'catalog.csv',
       mimeType: 'text/csv',
       buffer: Buffer.from('title,isbn,classification_no\nBook A,9781234567890,733.4'),
-    });
+    })
+    await expect(page.getByText('history_catalog.csv')).toBeVisible()
 
-    // Check successful import message and table row updates
-    await expect(page.locator('.ant-message-success:has-text("成功匯入 50 筆館藏記錄")')).toBeVisible();
-    await expect(page.locator('.ant-table-row').first()).toContainText('history_catalog.csv');
+    await page.getByRole('button', { name: /主題發想/ }).click()
+    await page.getByText('節慶策展', { exact: true }).click()
+    await page.getByLabel('節慶或檔期').fill('世界閱讀日')
+    await page.getByLabel('活動年份').fill('2027')
+    await page.getByLabel('關鍵詞').fill('閱讀、AI')
+    await page.getByRole('button', { name: '產生主題' }).click()
+    await expect(page.getByText('世界閱讀日智慧策展').first()).toBeVisible()
 
-    // ----------------------------------------------------
-    // STEP 3: AI Theme Generation Flow
-    // ----------------------------------------------------
-    await page.click('.sidebar .ant-menu-item:has-text("AI 智慧發想")');
-    await expect(page.locator('.page-header h1')).toContainText('AI 智慧策展發想');
+    await page.getByRole('button', { name: '比對館藏' }).click()
+    await expect(page.getByText('AI 時代的閱讀力')).toBeVisible()
+    await page.getByRole('button', { name: /建立企劃書/ }).click()
+    await expect(page).toHaveURL(/\/proposal$/)
 
-    // Fill parameters
-    await page.fill('textarea[placeholder="例如：科技、未來、創新"]', '科技, 智慧');
-    await page.fill('textarea[placeholder="例如：AI 快速發展、氣候變遷"]', 'AI 快速發展');
+    await expect(page.locator('.ql-toolbar')).toBeVisible()
+    await page.getByLabel('標題').fill('世界閱讀日智慧策展（更新）')
+    await page.locator('.ql-editor').fill('更新後的富文本企劃內容')
+    await page.getByRole('button', { name: '儲存' }).click()
+    await page.getByRole('button', { name: '匹配館藏' }).click()
+    await expect(page.getByText('AI 時代的閱讀力')).toBeVisible()
 
-    // Trigger AI generation
-    await page.click('button:has-text("生成策展主題")');
+    await page.getByRole('button', { name: /成效儀表板/ }).click()
+    await expect(page.getByText('134 小時')).toBeVisible()
+    await page.getByRole('button', { name: '設定參數' }).click()
+    await page.getByLabel('平均時薪 (NT$)').fill('250')
+    await page.getByRole('button', { name: '儲存參數' }).click()
 
-    // Expect the theme outline card is rendered
-    await expect(page.locator('.theme-card h4')).toContainText('AI 智慧科技大潮特展');
+    await page.getByRole('button', { name: '登出' }).click()
+    await expect(page).toHaveURL(/\/login$/)
+  })
 
-    // ----------------------------------------------------
-    // STEP 4: Catalog Matching & Proposal Creation Flow
-    // ----------------------------------------------------
-    // Select the card by clicking it
-    await page.click('.ant-card-hoverable:has-text("AI 智慧科技大潮特展")');
-    
-    // Perform Catalog matching
-    await page.click('button:has-text("比對館藏庫")');
-    await expect(page.locator('.ant-message-success:has-text("已匹配 5 本館藏")')).toBeVisible();
+  test('keeps editor and settings usable on a mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/login')
+    await page.getByRole('button', { name: '填入測試帳密' }).click()
+    await page.getByRole('button', { name: '登入', exact: true }).click()
 
-    // Export theme details to proposal草稿
-    await page.click('button:has-text("拋轉至企劃中心")');
-    await expect(page.locator('.ant-message-success:has-text("已成功建立企劃書草案")')).toBeVisible();
+    await page.goto('/proposal')
+    await expect(page.locator('.ql-toolbar')).toBeVisible()
+    await page.locator('.ql-editor').fill('行動版富文本內容')
+    await page.getByRole('button', { name: '儲存' }).click()
 
-    // ----------------------------------------------------
-    // STEP 5: Proposal Editor Online Editing & Document Export Flow
-    // ----------------------------------------------------
-    await expect(page).toHaveURL('/proposal');
-    await expect(page.locator('.page-header h1')).toContainText('策展企劃管理中心');
-    await expect(page.locator('.proposal-item').first()).toContainText('AI 智慧科技大潮特展');
-
-    // Simulate editing proposal title and content
-    await page.fill('input[placeholder="輸入企劃書標題"]', 'AI 智慧科技大潮特展 (E2E Mod)');
-    
-    // Simulate rich editor text input
-    await page.locator('.rich-editor').fill('<h1>Modified Header</h1><p>New E2E Content</p>');
-
-    // Click Save
-    await page.click('button:has-text("儲存企劃書")');
-    await expect(page.locator('.ant-message-success:has-text("企劃書已更新")')).toBeVisible();
-
-    // Click Export Word
-    await page.click('button:has-text("匯出 Word")');
-    await expect(page.locator('.ant-message-success:has-text("已匯出為 Word")')).toBeVisible();
-
-    // Click Export PDF
-    await page.click('button:has-text("匯出 PDF")');
-    await expect(page.locator('.ant-message-success:has-text("已匯出為 PDF")')).toBeVisible();
-
-    // ----------------------------------------------------
-    // STEP 6: Dashboard Statistics Verification & Admin settings Flow
-    // ----------------------------------------------------
-    await page.click('.sidebar .ant-menu-item:has-text("效益戰情室")');
-    await expect(page.locator('.page-header h1')).toContainText('效益分析戰情室');
-
-    // Verify cost savings statistics match mock data
-    await expect(page.locator('.stat-card:has-text("累計節省工時") .ant-statistic-content-value-int')).toContainText('134');
-    await expect(page.locator('.stat-card:has-text("累計節省經費") .ant-statistic-content-value')).toContainText('67,000');
-
-    // Click parameter settings
-    await page.click('button:has-text("參數設置")');
-    await expect(page.locator('.ant-modal-header')).toContainText('效益分析參數設置');
-
-    // Modify hourly rate input (hourly rate is the first spinbutton)
-    const inputs = page.locator('input[type="number"]');
-    await inputs.nth(0).fill('250');
-
-    // Submit settings Modal
-    await page.click('.ant-modal-footer button.ant-btn-primary');
-    await expect(page.locator('.ant-message-success:has-text("設置已更新")')).toBeVisible();
-  });
-});
+    await page.goto('/dashboard')
+    await page.getByRole('button', { name: '設定參數' }).click()
+    await expect(page.getByRole('dialog', { name: '效益計算參數' })).toBeVisible()
+    await page.getByLabel('平均時薪 (NT$)').fill('300')
+    await page.getByRole('button', { name: '儲存參數' }).click()
+  })
+})

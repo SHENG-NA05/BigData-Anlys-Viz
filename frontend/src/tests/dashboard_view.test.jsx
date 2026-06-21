@@ -47,7 +47,9 @@ describe('DashboardView API integration', () => {
 
   test('updates calculation settings through the backend', async () => {
     render(<DashboardView />)
-    const rateInput = await screen.findByLabelText('平均時薪 (NT$)')
+    await screen.findByText('18 小時')
+    fireEvent.click(screen.getByRole('button', { name: '設定參數' }))
+    const rateInput = screen.getByLabelText('平均時薪 (NT$)')
     fireEvent.change(rateInput, { target: { value: '250' } })
     fireEvent.click(screen.getByRole('button', { name: '儲存參數' }))
 

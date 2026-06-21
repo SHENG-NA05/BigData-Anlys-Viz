@@ -10,16 +10,27 @@ const splitKeywords = (keywords) => {
 }
 
 export const curationService = {
-  generateThemes: async (keywords, currentTrends, holidays, customPrompt) => {
+  generateThemes: async ({
+    keywords,
+    curationType = 'trend',
+    currentTrends = '',
+    festival = '',
+    customPrompt = '',
+    year = new Date().getFullYear(),
+  }) => {
     const keywordsList = splitKeywords(keywords)
-    const promptParts = [customPrompt, currentTrends && `趨勢脈絡：${currentTrends}`, holidays && `節慶或檔期：${holidays}`]
+    const promptParts = [
+      customPrompt,
+      curationType === 'trend' && currentTrends && `趨勢脈絡：${currentTrends}`,
+      curationType === 'festival' && festival && `節慶或檔期：${festival}`,
+    ]
       .filter(Boolean)
 
     const response = await apiClient.post('/generate_themes', {
-      curation_type: customPrompt ? 'custom' : holidays ? 'festival' : 'trend',
+      curation_type: curationType,
       keywords: keywordsList,
       prompt: promptParts.join('\n'),
-      year: 2026,
+      year,
     })
 
     if (response.data?.status === 'success' && Array.isArray(response.data.data)) {
