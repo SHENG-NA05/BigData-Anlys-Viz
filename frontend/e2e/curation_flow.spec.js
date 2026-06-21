@@ -144,6 +144,18 @@ test.describe('Smart Curation frontend workflow', () => {
     await page.getByRole('button', { name: '填入測試帳密' }).click()
     await page.getByRole('button', { name: '登入', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /策展前/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /策展中/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /策展後/ })).toBeVisible()
+
+    await page.getByRole('button', { name: /策展中/ }).click()
+    await expect(page.getByRole('heading', { name: '策展企劃管理' })).toBeVisible()
+    await expect(page.locator('.ra-topbar-title')).toHaveText('策展中｜企劃編輯與匯出')
+    await page.getByRole('button', { name: /策展後/ }).click()
+    await expect(page.getByRole('heading', { name: '工時與成本效益' })).toBeVisible()
+    await expect(page.locator('.ra-topbar-title')).toHaveText('策展後｜效益分析戰情室')
+    await page.getByRole('button', { name: /策展前/ }).click()
+    await expect(page.locator('.ra-topbar-title')).toHaveText('策展前｜AI 智慧策展發想')
 
     await page.getByRole('button', { name: /館藏匯入/ }).click()
     await page.locator('input[type="file"]').setInputFiles({
@@ -153,7 +165,7 @@ test.describe('Smart Curation frontend workflow', () => {
     })
     await expect(page.getByText('history_catalog.csv')).toBeVisible()
 
-    await page.getByRole('button', { name: /主題發想/ }).click()
+    await page.getByRole('button', { name: /策展前/ }).click()
     await page.getByText('節慶策展', { exact: true }).click()
     await page.getByLabel('節慶或檔期').fill('世界閱讀日')
     await page.getByLabel('活動年份').fill('2027')
@@ -173,7 +185,7 @@ test.describe('Smart Curation frontend workflow', () => {
     await page.getByRole('button', { name: '匹配館藏' }).click()
     await expect(page.getByText('AI 時代的閱讀力')).toBeVisible()
 
-    await page.getByRole('button', { name: /成效儀表板/ }).click()
+    await page.getByRole('button', { name: /策展後/ }).click()
     await expect(page.getByText('134 小時')).toBeVisible()
     await page.getByRole('button', { name: '設定參數' }).click()
     await page.getByLabel('平均時薪 (NT$)').fill('250')
