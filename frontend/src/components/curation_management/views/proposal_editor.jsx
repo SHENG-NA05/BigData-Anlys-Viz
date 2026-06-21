@@ -1,15 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Spin, message } from 'antd'
+import DOMPurify from 'dompurify'
 import { BookOpen, FileDown, FileText, RefreshCw, Save, Sparkles } from 'lucide-react'
+import ReactQuill from 'react-quill-new'
 import { useLocation } from 'react-router-dom'
 import { proposalService } from '../../../services/proposalService'
+import 'react-quill-new/dist/quill.snow.css'
 import './ProposalEditor.css'
+
+const editorModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean'],
+  ],
+}
+
+const editorFormats = [
+  'header',
+  'bold',
+  'italic',
+  'underline',
+  'list',
+  'bullet',
+  'blockquote',
+  'link',
+]
 
 const normalizeProposal = (proposal) => ({
   id: proposal.proposal_id,
   themeId: proposal.theme_id,
   title: proposal.title,
-  content: proposal.content || '',
+  content: DOMPurify.sanitize(proposal.content || ''),
   matchedBooks: proposal.matched_books || [],
   status: proposal.status || 'draft',
   createdAt: proposal.created_at,
@@ -88,10 +112,11 @@ const ProposalEditor = () => {
     if (!selectedProposalId || !title.trim()) return
     setSaving(true)
     try {
+      const safeContent = DOMPurify.sanitize(content)
       const response = await proposalService.updateProposal(
         selectedProposalId,
         title.trim(),
-        content,
+        safeContent,
         status,
       )
       const updated = normalizeProposal(response.data)
@@ -187,12 +212,16 @@ const ProposalEditor = () => {
                     <option value="review">審核中</option>
                     <option value="published">已發布</option>
                   </select>
-                  <label htmlFor="proposal-content">內容</label>
-                  <textarea
-                    id="proposal-content"
+                  <label id="proposal-content-label">內容</label>
+                  <ReactQuill
+                    aria-labelledby="proposal-content-label"
+                    className="proposal-rich-editor"
+                    theme="snow"
                     value={content}
-                    onChange={(event) => setContent(event.target.value)}
-                    rows={20}
+                    onChange={setContent}
+                    modules={editorModules}
+                    formats={editorFormats}
+                    placeholder="輸入企劃書內容"
                   />
                   <div className="proposal-hero-actions">
                     <button className="ra-primary-button" onClick={handleSave} disabled={saving}>

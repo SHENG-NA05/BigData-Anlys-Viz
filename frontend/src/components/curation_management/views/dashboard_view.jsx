@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Spin, message } from 'antd'
-import { BarChart3, Clock3, DollarSign, FileDown, RefreshCw, Sparkles } from 'lucide-react'
+import { Modal, Spin, message } from 'antd'
+import { BarChart3, Clock3, DollarSign, FileDown, RefreshCw, Settings, Sparkles } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -22,6 +22,8 @@ const DashboardView = () => {
   const [monthlyStats, setMonthlyStats] = useState([])
   const [quarterlyStats, setQuarterlyStats] = useState([])
   const [settings, setSettings] = useState(null)
+  const [settingsDraft, setSettingsDraft] = useState(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -38,6 +40,7 @@ const DashboardView = () => {
       setMonthlyStats(Array.isArray(monthlyResult) ? monthlyResult : [])
       setQuarterlyStats(Array.isArray(quarterlyResult) ? quarterlyResult : [])
       setSettings(settingsResult)
+      setSettingsDraft(settingsResult)
       if (showSuccess) message.success('已更新儀表板')
     } catch (error) {
       message.error(errorMessage(error, '無法讀取儀表板資料'))
@@ -51,14 +54,15 @@ const DashboardView = () => {
   }, [])
 
   const handleSaveSettings = async () => {
-    if (!settings) return
+    if (!settingsDraft) return
     setSaving(true)
     try {
       await dashboardService.updateSettings(
-        Number(settings.hourly_rate),
-        Number(settings.base_hours),
+        Number(settingsDraft.hourly_rate),
+        Number(settingsDraft.base_hours),
       )
       message.success('系統參數已儲存')
+      setSettingsOpen(false)
       await loadDashboard()
     } catch (error) {
       message.error(errorMessage(error, '儲存系統參數失敗'))
@@ -83,9 +87,21 @@ const DashboardView = () => {
             <h1>工時與成本效益</h1>
             <p>顯示後端資料庫累計的策展作業次數、節省工時與成本。</p>
           </div>
-          <button className="ra-secondary-button" onClick={() => loadDashboard(true)}>
-            <RefreshCw size={17} />更新資料
-          </button>
+          <div className="dashboard-actions">
+            <button
+              className="ra-secondary-button"
+              onClick={() => {
+                setSettingsDraft(settings)
+                setSettingsOpen(true)
+              }}
+              disabled={!settings}
+            >
+              <Settings size={17} />設定參數
+            </button>
+            <button className="ra-secondary-button" onClick={() => loadDashboard(true)}>
+              <RefreshCw size={17} />更新資料
+            </button>
+          </div>
         </section>
 
         <Spin spinning={loading}>
@@ -143,16 +159,22 @@ const DashboardView = () => {
             </article>
           </section>
 
-          {settings && (
-            <section className="ra-panel dashboard-settings">
-              <h2>效益計算參數</h2>
+          <Modal
+            title="效益計算參數"
+            open={settingsOpen}
+            onCancel={() => setSettingsOpen(false)}
+            footer={null}
+            destroyOnHidden
+          >
+            {settingsDraft && (
+              <div className="dashboard-settings">
               <label htmlFor="hourly-rate">平均時薪 (NT$)</label>
               <input
                 id="hourly-rate"
                 type="number"
                 min="0"
-                value={settings.hourly_rate}
-                onChange={(event) => setSettings((current) => ({
+                value={settingsDraft.hourly_rate}
+                onChange={(event) => setSettingsDraft((current) => ({
                   ...current,
                   hourly_rate: event.target.value,
                 }))}
@@ -163,8 +185,8 @@ const DashboardView = () => {
                 type="number"
                 min="0"
                 step="0.5"
-                value={settings.base_hours}
-                onChange={(event) => setSettings((current) => ({
+                value={settingsDraft.base_hours}
+                onChange={(event) => setSettingsDraft((current) => ({
                   ...current,
                   base_hours: event.target.value,
                 }))}
@@ -172,8 +194,9 @@ const DashboardView = () => {
               <button className="ra-primary-button" onClick={handleSaveSettings} disabled={saving}>
                 {saving ? '儲存中...' : '儲存參數'}
               </button>
-            </section>
-          )}
+              </div>
+            )}
+          </Modal>
         </Spin>
       </main>
     </div>

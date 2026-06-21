@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Spin, message } from 'antd'
+import { Segmented, Skeleton, message } from 'antd'
 import { ArrowRight, BookOpen, RefreshCw, Sparkles, Wand2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { catalogService } from '../../../services/catalogService'
@@ -23,6 +23,9 @@ const errorMessage = (error, defaultMessage) =>
 
 const CurationThemeGenerator = () => {
   const navigate = useNavigate()
+  const [curationType, setCurationType] = useState('trend')
+  const [festival, setFestival] = useState('')
+  const [year, setYear] = useState(new Date().getFullYear())
   const [prompt, setPrompt] = useState('')
   const [keywords, setKeywords] = useState('')
   const [themes, setThemes] = useState([])
@@ -30,6 +33,7 @@ const CurationThemeGenerator = () => {
   const [selectedThemeId, setSelectedThemeId] = useState(null)
   const [matchedBooks, setMatchedBooks] = useState([])
   const [loading, setLoading] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(true)
   const [matching, setMatching] = useState(false)
 
   const selectedTheme = useMemo(
@@ -38,6 +42,7 @@ const CurationThemeGenerator = () => {
   )
 
   const loadHistory = async (showSuccess = false) => {
+    setHistoryLoading(true)
     try {
       const result = await curationService.getThemeHistory()
       const remoteThemes = normalizeThemes(result?.data)
@@ -48,6 +53,8 @@ const CurationThemeGenerator = () => {
       if (showSuccess) message.success('已更新主題歷史')
     } catch (error) {
       message.error(errorMessage(error, '無法讀取主題歷史'))
+    } finally {
+      setHistoryLoading(false)
     }
   }
 
@@ -63,15 +70,25 @@ const CurationThemeGenerator = () => {
       message.warning('請先輸入至少一個關鍵詞')
       return
     }
+    if (curationType === 'festival' && !festival.trim()) {
+      message.warning('請輸入節慶或檔期名稱')
+      return
+    }
+    if (curationType === 'custom' && !prompt.trim()) {
+      message.warning('請輸入自訂策展需求')
+      return
+    }
 
     setLoading(true)
     try {
-      const generated = normalizeThemes(await curationService.generateThemes(
+      const generated = normalizeThemes(await curationService.generateThemes({
         keywords,
-        trends.join('、'),
-        '',
-        prompt,
-      ))
+        curationType,
+        currentTrends: trends.join('、'),
+        festival,
+        customPrompt: prompt,
+        year,
+      }))
       if (!generated.length) throw new Error('AI 服務未回傳主題')
       setThemes((current) => [...generated, ...current.filter(
         (theme) => !generated.some((item) => item.id === theme.id),
@@ -140,6 +157,42 @@ const CurationThemeGenerator = () => {
         </section>
 
         <section className="ra-panel prompt-panel">
+          <label>發想模式</label>
+          <Segmented
+            aria-label="發想模式"
+            block
+            value={curationType}
+            onChange={setCurationType}
+            options={[
+              { label: '時事策展', value: 'trend' },
+              { label: '節慶策展', value: 'festival' },
+              { label: '自訂策展', value: 'custom' },
+            ]}
+          />
+          {curationType === 'festival' && (
+            <div className="prompt-conditional-fields">
+              <div>
+                <label htmlFor="theme-festival">節慶或檔期</label>
+                <input
+                  id="theme-festival"
+                  value={festival}
+                  onChange={(event) => setFestival(event.target.value)}
+                  placeholder="例如：世界閱讀日、中秋節"
+                />
+              </div>
+              <div>
+                <label htmlFor="theme-year">活動年份</label>
+                <input
+                  id="theme-year"
+                  type="number"
+                  min="2020"
+                  max="2100"
+                  value={year}
+                  onChange={(event) => setYear(Number(event.target.value))}
+                />
+              </div>
+            </div>
+          )}
           <label htmlFor="theme-keywords">關鍵詞</label>
           <input
             id="theme-keywords"
@@ -156,7 +209,7 @@ const CurationThemeGenerator = () => {
               ))}
             </div>
           )}
-          <label htmlFor="theme-prompt">補充需求</label>
+          <label htmlFor="theme-prompt">{curationType === 'custom' ? '自訂策展需求' : '補充需求'}</label>
           <textarea
             id="theme-prompt"
             value={prompt}
@@ -175,9 +228,14 @@ const CurationThemeGenerator = () => {
           <span>{themes.length} 筆</span>
         </section>
 
-        <Spin spinning={loading}>
-          <section className="theme-card-grid">
-            {themes.map((theme) => (
+        <section className="theme-card-grid" aria-busy={loading || historyLoading}>
+          {(loading || historyLoading) ? Array.from({ length: 3 }, (_, index) => (
+            <article className="theme-option-card theme-skeleton-card" key={`theme-skeleton-${index}`}>
+              <Skeleton active title paragraph={{ rows: 3 }} />
+            </article>
+          )) : (
+            <>
+              {themes.map((theme) => (
               <article
                 key={theme.id}
                 className={`theme-option-card ${selectedThemeId === theme.id ? 'active' : ''}`}
@@ -193,10 +251,11 @@ const CurationThemeGenerator = () => {
                 </div>
                 <small>{theme.target_audience || '未設定目標觀眾'}</small>
               </article>
-            ))}
-            {!themes.length && <p className="empty-state">尚無主題，請輸入關鍵詞後產生。</p>}
-          </section>
-        </Spin>
+              ))}
+              {!themes.length && <p className="empty-state">尚無主題，請輸入關鍵詞後產生。</p>}
+            </>
+          )}
+        </section>
 
         {selectedTheme && (
           <section className="ra-panel">
