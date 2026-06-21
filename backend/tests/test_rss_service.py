@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from app.services.rss_service import RSSService, FALLBACK_KEYWORDS
+from app.services.rss_service import RSSService
 
 def test_rss_service_google_trends_success():
     service = RSSService()
@@ -34,11 +34,11 @@ def test_rss_service_google_news_success():
         keywords = service.fetch_google_news()
         assert keywords == ["台積電設廠"]
 
-def test_rss_service_fallback_on_exception():
+def test_rss_service_returns_empty_list_on_exception():
     service = RSSService()
     with patch("httpx.get", side_effect=Exception("Connection error")):
         keywords = service.get_trending_keywords()
-        assert keywords == FALLBACK_KEYWORDS
+        assert keywords == []
 
 def test_rss_service_missing_channel():
     service = RSSService()

@@ -4,22 +4,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-FALLBACK_KEYWORDS = [
-    "AI人工智慧",
-    "ChatGPT",
-    "數位轉型",
-    "ESG永續發展",
-    "智慧城市",
-    "地方創生",
-    "虛擬實境",
-    "資訊安全",
-    "量子計算",
-    "元宇宙"
-]
-
 class RSSService:
     def __init__(self):
-        self.trends_url = "https://trends.google.com/trends/trendingsearches/daily/rss?geo=TW"
+        self.trends_url = "https://trends.google.com/trending/rss?geo=TW"
         self.news_url = "https://news.google.com/rss?hl=zh-TW&gl=TW&ceid=TW:zh-Hant"
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -67,7 +54,7 @@ class RSSService:
             return []
 
     def get_trending_keywords(self) -> list[str]:
-        """合併並獲取熱門時事關鍵字/標題，若失敗則回傳預設詞清單"""
+        """合併 Google Trends 與 Google News 的即時關鍵字。"""
         trends = self.fetch_google_trends()
         news = self.fetch_google_news()
 
@@ -78,9 +65,5 @@ class RSSService:
             if k_clean and k_clean not in seen:
                 merged.append(k_clean)
                 seen.add(k_clean)
-
-        if not merged:
-            logger.info("使用預設時事熱門詞清單。")
-            return FALLBACK_KEYWORDS
 
         return merged[:30]

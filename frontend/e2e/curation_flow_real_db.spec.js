@@ -7,13 +7,15 @@ test.describe('Smart Curation System real backend workflow', () => {
 
     await page.goto('/login')
     await expect(page.getByRole('heading', { name: '策展工作台登入' })).toBeVisible()
-    await page.getByPlaceholder('帳號 / Email').fill('demo_curator')
-    await page.getByPlaceholder('密碼').fill('demo-password-for-local-testing-only')
+    await page.getByRole('button', { name: '填入測試帳密' }).click()
+    await expect(page.getByPlaceholder('帳號 / Email')).toHaveValue('demo_curator')
+    await expect(page.getByPlaceholder('密碼')).toHaveValue('demo-password-for-local-testing-only')
+    await expect(page.getByPlaceholder('密碼')).toHaveAttribute('type', 'text')
     await page.getByRole('button', { name: '登入' }).click()
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
 
-    await page.getByRole('button', { name: '資料庫' }).click()
+    await page.getByRole('button', { name: /館藏匯入/ }).click()
     await expect(page).toHaveURL(/\/import$/)
     await expect(page.getByRole('heading', { name: '資料庫與素材管理' })).toBeVisible()
     await expect(page.getByText('fake_catalog_sample.csv')).toBeVisible()
@@ -32,7 +34,7 @@ test.describe('Smart Curation System real backend workflow', () => {
     expect((await uploadResponse).status()).toBe(200)
     await expect(page.getByText(filename)).toBeVisible({ timeout: 30_000 })
 
-    await page.getByRole('button', { name: /\u7b56展前/ }).click()
+    await page.getByRole('button', { name: /主題發想/ }).click()
     await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
     await page.getByLabel('關鍵詞').fill(`AI、資料閱讀、${runId}`)
     await page.getByLabel('補充需求').fill('產生適合公共圖書館的策展主題')
@@ -87,7 +89,7 @@ test.describe('Smart Curation System real backend workflow', () => {
     expect(downloadAnchor.href).toMatch(/^blob:/)
     expect(await download.createReadStream()).not.toBeNull()
 
-    await page.getByRole('button', { name: /\u7b56展後/ }).click()
+    await page.getByRole('button', { name: /成效儀表板/ }).click()
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByRole('heading', { name: '工時與成本效益' })).toBeVisible()
     await expect(page.getByText('累計節省工時')).toBeVisible()

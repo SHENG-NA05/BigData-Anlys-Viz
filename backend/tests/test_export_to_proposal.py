@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from app.api.endpoints.proposal import export_to_proposal, get_proposal, update_proposal
 from app.db.models import CatalogBook, CurationTheme, Proposal
 from app.schemas.proposal import ProposalExportRequest, ProposalUpdateRequest
+from app.services.ai_service import AIServiceError
 
 
 class FakeCatalogQuery:
@@ -157,6 +158,26 @@ def test_export_to_proposal_returns_404_when_theme_missing():
 
     assert exc_info.value.status_code == 404
     assert "Curation theme not found" in exc_info.value.detail
+    assert db.items == []
+    assert db.committed is False
+
+
+@patch("app.api.endpoints.proposal._ai_service.expand_proposal")
+def test_export_to_proposal_does_not_create_fake_draft_when_ai_fails(mock_expand):
+    mock_expand.side_effect = AIServiceError("AI unavailable")
+    theme = CurationTheme(
+        theme_id="T001",
+        curation_type="trend",
+        title="AI Reading Future",
+        outline="AI outline",
+        target_audience="General readers",
+        keywords=["AI"],
+    )
+    db = FakeDb(theme=theme)
+
+    with pytest.raises(AIServiceError):
+        export_to_proposal(make_request(), db=db)
+
     assert db.items == []
     assert db.committed is False
 
