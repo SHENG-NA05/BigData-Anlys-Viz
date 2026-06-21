@@ -42,12 +42,8 @@ export const curationService = {
   },
 
   getTrendingKeywords: async () => {
-    try {
-      const response = await apiClient.get('/rss/trends')
-      return response.data?.status === 'success' ? response.data.data || [] : []
-    } catch (error) {
-      return []
-    }
+    const response = await apiClient.get('/rss/trends')
+    return response.data?.status === 'success' ? response.data.data || [] : []
   },
 
   deleteTheme: async (themeId) => {

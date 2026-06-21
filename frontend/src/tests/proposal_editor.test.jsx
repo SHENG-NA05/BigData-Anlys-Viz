@@ -1,89 +1,83 @@
 import React from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { message } from 'antd'
 import ProposalEditor from '../components/curation_management/views/proposal_editor'
 import { proposalService } from '../services/proposalService'
 
 jest.mock('../services/proposalService', () => ({
   proposalService: {
-    createProposal: jest.fn(),
+    listProposals: jest.fn(),
     exportToWord: jest.fn(),
     exportToPdf: jest.fn(),
     updateProposal: jest.fn(),
+    matchCatalog: jest.fn(),
   },
 }))
 
-describe('ProposalEditor RA workspace', () => {
+const proposal = {
+  proposal_id: 'P-1',
+  theme_id: 'T-1',
+  title: '真實企劃書',
+  content: '資料庫企劃內容',
+  matched_books: [],
+  status: 'draft',
+  created_at: '2026-06-21 10:00:00',
+  updated_at: '2026-06-21 10:00:00',
+}
+
+const renderPage = () => render(<MemoryRouter><ProposalEditor /></MemoryRouter>)
+
+describe('ProposalEditor API integration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    localStorage.clear()
-    window.URL.createObjectURL = jest.fn(() => 'blob:mock-url')
+    proposalService.listProposals.mockResolvedValue({ data: [proposal] })
+    window.URL.createObjectURL = jest.fn(() => 'blob:test-url')
     window.URL.revokeObjectURL = jest.fn()
     HTMLAnchorElement.prototype.click = jest.fn()
     message.success = jest.fn()
-    message.warning = jest.fn()
-    message.info = jest.fn()
+    message.error = jest.fn()
   })
 
-  test('renders RA proposal editor layout', () => {
-    render(<ProposalEditor />)
-
-    expect(screen.getByRole('heading', { name: '策展內容整合與編排' })).toBeInTheDocument()
-    expect(screen.getByText('展區結構與敘事動線')).toBeInTheDocument()
-    expect(screen.getByText('AI 編輯建議')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /匯出 Word/ })).toBeInTheDocument()
+  test('loads proposals from the backend', async () => {
+    renderPage()
+    expect(await screen.findByDisplayValue('真實企劃書')).toBeInTheDocument()
+    expect(proposalService.listProposals).toHaveBeenCalled()
   })
 
-  test('adds a section and updates active section text', () => {
-    render(<ProposalEditor />)
+  test('saves the selected proposal through the backend', async () => {
+    proposalService.updateProposal.mockResolvedValue({ data: { ...proposal, title: '更新後標題' } })
+    renderPage()
+    const titleInput = await screen.findByDisplayValue('真實企劃書')
+    fireEvent.change(titleInput, { target: { value: '更新後標題' } })
+    fireEvent.click(screen.getByRole('button', { name: /^儲存$/ }))
 
-    fireEvent.click(screen.getByRole('button', { name: /新增展區/ }))
-    expect(screen.getByDisplayValue('請輸入展區敘事重點')).toBeInTheDocument()
-
-    fireEvent.change(screen.getByDisplayValue('請輸入展區敘事重點'), {
-      target: { value: '觀眾共創結尾' },
-    })
-    expect(screen.getByDisplayValue('觀眾共創結尾')).toBeInTheDocument()
+    await waitFor(() => expect(proposalService.updateProposal).toHaveBeenCalledWith(
+      'P-1', '更新後標題', '資料庫企劃內容', 'draft',
+    ))
+    expect(message.success).toHaveBeenCalledWith('企劃書已儲存至資料庫')
   })
 
-  test('saves proposal draft', async () => {
-    proposalService.updateProposal.mockResolvedValue({ status: 'success' })
-    render(<ProposalEditor />)
-
-    fireEvent.click(screen.getByRole('button', { name: /儲存/ }))
-
-    await waitFor(() => {
-      expect(localStorage.getItem('ra-proposal-draft')).toContain('感知擴張')
-      expect(message.success).toHaveBeenCalledWith('提案已儲存')
-    })
+  test('renders catalog matches returned by the backend', async () => {
+    proposalService.matchCatalog.mockResolvedValue({ data: {
+      ...proposal,
+      matched_books: [{ book_id: 9, title: '智慧圖書館', classification_no: '020', match_score: 88 }],
+    } })
+    renderPage()
+    await screen.findByDisplayValue('真實企劃書')
+    fireEvent.click(screen.getByRole('button', { name: /匹配館藏/ }))
+    expect(await screen.findByText('智慧圖書館')).toBeInTheDocument()
   })
 
-  test('adds collaboration comment', () => {
-    render(<ProposalEditor />)
-
-    fireEvent.change(screen.getByPlaceholderText('撰寫留言...'), {
-      target: { value: '請補一段導覽語音' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: '送出' }))
-
-    expect(screen.getByText('請補一段導覽語音')).toBeInTheDocument()
-  })
-
-  test('exports word and pdf files', async () => {
+  test('exports files returned by the backend', async () => {
     proposalService.exportToWord.mockResolvedValue(new Blob(['word']))
     proposalService.exportToPdf.mockResolvedValue(new Blob(['pdf']))
-    render(<ProposalEditor />)
+    renderPage()
+    await screen.findByDisplayValue('真實企劃書')
 
-    fireEvent.click(screen.getByRole('button', { name: /匯出 Word/ }))
-    await waitFor(() => {
-      expect(proposalService.exportToWord).toHaveBeenCalled()
-      expect(message.success).toHaveBeenCalledWith('已匯出 DOCX')
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: /匯出 PDF/ }))
-    await waitFor(() => {
-      expect(proposalService.exportToPdf).toHaveBeenCalled()
-      expect(message.success).toHaveBeenCalledWith('已匯出 PDF')
-    })
+    fireEvent.click(screen.getByRole('button', { name: /Word/ }))
+    await waitFor(() => expect(proposalService.exportToWord).toHaveBeenCalledWith('P-1'))
+    fireEvent.click(screen.getByRole('button', { name: /PDF/ }))
+    await waitFor(() => expect(proposalService.exportToPdf).toHaveBeenCalledWith('P-1'))
   })
 })

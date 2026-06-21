@@ -11,20 +11,17 @@ export const catalogService = {
   },
 
   getUploadHistory: async () => {
-    try {
-      const response = await apiClient.get('/catalog/upload-history')
-      return response.data || []
-    } catch (error) {
-      return []
-    }
+    const response = await apiClient.get('/catalog/upload-history')
+    return response.data || []
   },
 
   validateFile: async (file) => {
-    const isSupported = /\.(csv|xlsx)$/i.test(file.name)
-    if (!isSupported) {
-      return { status: 'error', detail: '請上傳 CSV 或 XLSX 檔案' }
-    }
-    return { status: 'success', detail: '檔案格式可匯入' }
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await apiClient.post('/catalog/validate', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
   },
 
   matchCatalog: async (keywords, limit = 5) => {

@@ -522,6 +522,65 @@
   font-weight: 900;
 }
 
+.proposal-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.32fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.proposal-list-panel,
+.proposal-edit-panel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.proposal-list-panel > button {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #e2d7c7;
+  border-radius: 6px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.proposal-list-panel > button.active {
+  border-color: #9b7440;
+  background: #fffaf2;
+}
+
+.proposal-list-panel span {
+  color: #766d62;
+  font-size: 12px;
+}
+
+.proposal-edit-panel label {
+  color: #4f473d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.proposal-edit-panel input,
+.proposal-edit-panel select,
+.proposal-edit-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d9cdbd;
+  border-radius: 6px;
+  background: #fff;
+  color: #302b25;
+  padding: 11px 12px;
+  font: inherit;
+}
+
+.proposal-edit-panel textarea {
+  resize: vertical;
+  line-height: 1.65;
+}
+
 @media (max-width: 1320px) {
   .proposal-page {
     grid-template-columns: 1fr;
@@ -543,6 +602,10 @@
   .proposal-builder,
   .proposal-rail,
   .insert-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .proposal-editor-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -470,6 +470,36 @@
   grid-column: 1 / -1;
 }
 
+.dashboard-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  gap: 10px 16px;
+  align-items: end;
+}
+
+.dashboard-settings h2 {
+  grid-column: 1 / -1;
+}
+
+.dashboard-settings label {
+  color: #4f473d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dashboard-settings input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d9cdbd;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.dashboard-settings button {
+  grid-column: 1 / -1;
+  width: fit-content;
+}
+
 @media (max-width: 1320px) {
   .dashboard-page {
     grid-template-columns: 1fr;
@@ -491,6 +521,10 @@
   .dashboard-rail,
   .roi-layout,
   .line-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-settings {
     grid-template-columns: 1fr;
   }
 
