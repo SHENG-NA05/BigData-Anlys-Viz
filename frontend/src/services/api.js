@@ -1,6 +1,10 @@
 import axios from 'axios'
 
-const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/curation_management/backend`
+const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const trimmedBaseUrl = rawBaseUrl.replace(/\/$/, '')
+const API_BASE_URL = trimmedBaseUrl.endsWith('/curation_management/backend')
+  ? trimmedBaseUrl
+  : `${trimmedBaseUrl}/curation_management/backend`
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -9,7 +13,6 @@ const apiClient = axios.create({
   },
 })
 
-// 添加請求攔截器以自動附加 Token
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token) {

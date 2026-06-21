@@ -9,14 +9,22 @@
 .proposal-main,
 .proposal-rail {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 18px;
+  min-width: 0;
 }
 
 .proposal-hero {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 22px;
+}
+
+.proposal-hero > div:first-child {
+  min-width: 0;
+  flex: 1 1 420px;
 }
 
 .proposal-hero h1 {

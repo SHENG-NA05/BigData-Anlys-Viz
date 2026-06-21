@@ -1,161 +1,116 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import CurationThemeGenerator from '../components/curation_management/views/curation_theme_generator';
-import { curationService } from '../services/curationService';
-import { message } from 'antd';
+import React from 'react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { message } from 'antd'
+import CurationThemeGenerator from '../components/curation_management/views/curation_theme_generator'
+import { curationService } from '../services/curationService'
+import { proposalService } from '../services/proposalService'
 
-// Mock curationService
 jest.mock('../services/curationService', () => ({
   curationService: {
     generateThemes: jest.fn(),
     getThemeHistory: jest.fn(() => Promise.resolve({ data: [] })),
-    getTrendingKeywords: jest.fn(() => Promise.resolve(['ChatGPT', 'AI人工智慧'])),
-    deleteTheme: jest.fn(() => Promise.resolve({ status: 'success' })),
+    getTrendingKeywords: jest.fn(() => Promise.resolve([])),
   },
-}));
+}))
 
-// Mock proposalService
 jest.mock('../services/proposalService', () => ({
   proposalService: {
     createProposal: jest.fn(),
-    getProposal: jest.fn(),
-    listProposals: jest.fn(() => Promise.resolve({ data: [] })),
   },
-}));
+}))
 
-// Mock catalogService
 jest.mock('../services/catalogService', () => ({
   catalogService: {
     matchCatalog: jest.fn(),
   },
-}));
+}))
 
-describe('CurationThemeGenerator Component', () => {
+const mockNavigate = jest.fn()
+
+jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  }
+})
+
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <CurationThemeGenerator />
+    </MemoryRouter>,
+  )
+
+describe('CurationThemeGenerator RA workspace', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    curationService.getThemeHistory.mockResolvedValue({ data: [] });
-    curationService.getTrendingKeywords.mockResolvedValue(['ChatGPT', 'AI人工智慧']);
-    message.success = jest.fn();
-    message.error = jest.fn();
-    message.info = jest.fn();
-  });
+    jest.clearAllMocks()
+    localStorage.clear()
+    message.success = jest.fn()
+    message.warning = jest.fn()
+    message.info = jest.fn()
+  })
 
-  test('renders generator page and initial empty state', () => {
-    render(<CurationThemeGenerator />);
-    expect(screen.getByRole('heading', { name: /AI 智慧策展發想/i })).toBeInTheDocument();
-    expect(screen.getByText(/發想參數設置/i)).toBeInTheDocument();
-    expect(screen.getByText(/暫無生成的主題/i)).toBeInTheDocument();
-  });
+  test('renders RA theme generation workspace', async () => {
+    renderPage()
 
-  test('fails validation when mandatory fields are empty', async () => {
-    render(<CurationThemeGenerator />);
-    const submitBtn = screen.getByRole('button', { name: /生成策展主題/i });
-    fireEvent.click(submitBtn);
+    expect(screen.getByRole('heading', { name: 'AI 背景探索與主題生成' })).toBeInTheDocument()
+    expect(screen.getByText('Prompt 輸入與生成建議')).toBeInTheDocument()
+    expect(screen.getAllByText('共生演算法').length).toBeGreaterThan(0)
+    expect(await screen.findByText('AI 洞察與建議')).toBeInTheDocument()
+  })
 
-    // Ant Design validation error messages should appear
-    await waitFor(() => {
-      expect(screen.getByText('請輸入關鍵字')).toBeInTheDocument();
-      expect(screen.getByText('請輸入時事')).toBeInTheDocument();
-    });
-  });
+  test('appends prompt chips to the textarea', () => {
+    renderPage()
 
-  test('loads trending keyword tags and appends clicked tag to trends field', async () => {
-    render(<CurationThemeGenerator />);
+    fireEvent.click(screen.getByRole('button', { name: '+ 觀眾輪廓' }))
 
-    const trendTag = await screen.findByText('ChatGPT');
-    fireEvent.click(trendTag);
+    expect(screen.getByRole('textbox').value).toContain('+ 觀眾輪廓')
+    expect(message.success).toHaveBeenCalledWith('已加入 Prompt')
+  })
 
-    expect(screen.getByLabelText(/當前時事熱門話題/)).toHaveValue('ChatGPT');
-    expect(message.info).toHaveBeenCalledWith('已加入時事關鍵字：ChatGPT');
-  });
+  test('generates and renders themes from service response', async () => {
+    curationService.generateThemes.mockResolvedValue([
+      {
+        id: 'theme-ai-lab',
+        title: 'AI 共創實驗室',
+        outline: '以互動裝置呈現人與 AI 的共同創作。',
+        keywords: ['AI', '互動', '共創'],
+      },
+    ])
 
-  test('successfully generates theme and renders card', async () => {
-    const mockTheme = {
-      title: 'AI 智慧特展',
-      outline: '展區規劃包括：AI 發展史。',
-      status: 'draft',
-    };
-    curationService.generateThemes.mockResolvedValue([mockTheme]);
-
-    render(<CurationThemeGenerator />);
-
-    // Fill form
-    const keywordInput = screen.getByLabelText(/關鍵字/);
-    const trendInput = screen.getByLabelText(/當前時事熱門話題/);
-    
-    fireEvent.change(keywordInput, { target: { value: 'AI, library' } });
-    fireEvent.change(trendInput, { target: { value: 'AI development' } });
-
-    const submitBtn = screen.getByRole('button', { name: /生成策展主題/i });
-    fireEvent.click(submitBtn);
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /生成構想/ }))
 
     await waitFor(() => {
-      expect(curationService.generateThemes).toHaveBeenCalledWith('AI, library', 'AI development', undefined, undefined);
-    });
+      expect(curationService.generateThemes).toHaveBeenCalled()
+    })
+
+    expect((await screen.findAllByText('AI 共創實驗室')).length).toBeGreaterThan(0)
+    expect(message.success).toHaveBeenCalledWith('已生成主題構想')
+  })
+
+  test('saves draft to local storage', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: /儲存草案/ }))
+
+    expect(localStorage.getItem('ra-theme-draft')).toContain('共生演算法')
+    expect(message.success).toHaveBeenCalledWith('草案已儲存')
+  })
+
+  test('creates proposal and navigates to proposal editor', async () => {
+    proposalService.createProposal.mockResolvedValue({ status: 'success', proposal_id: 'P-RA-1' })
+
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /建立策展方向/ }))
 
     await waitFor(() => {
-      expect(message.success).toHaveBeenCalledWith('策展主題生成成功！');
-    });
+      expect(proposalService.createProposal).toHaveBeenCalled()
+    })
 
-    // Check if new card is rendered
-    expect(screen.getByText('AI 智慧特展')).toBeInTheDocument();
-    expect(screen.getByText('展區規劃包括：AI 發展史。')).toBeInTheDocument();
-  });
-
-  test('selecting a theme displays details', async () => {
-    const mockTheme = {
-      title: 'AI 智慧特展',
-      outline: '展區規劃包括：AI 發展史。',
-      status: 'draft',
-    };
-    curationService.generateThemes.mockResolvedValue([mockTheme]);
-
-    render(<CurationThemeGenerator />);
-
-    // Fill form and generate
-    fireEvent.change(screen.getByLabelText(/關鍵字/), { target: { value: 'AI' } });
-    fireEvent.change(screen.getByLabelText(/當前時事熱門話題/), { target: { value: 'AI' } });
-    fireEvent.click(screen.getByRole('button', { name: /生成策展主題/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText('AI 智慧特展')).toBeInTheDocument();
-    });
-
-    // Click on the generated card
-    const card = screen.getByText('AI 智慧特展').closest('.ant-card-hoverable');
-    fireEvent.click(card);
-
-    // Verify detail section renders correctly
-    expect(screen.getByText(/選擇的主題詳情：AI 智慧特展/i)).toBeInTheDocument();
-  });
-
-  test('deletes a theme card on delete click', async () => {
-    const mockTheme = {
-      title: 'AI 智慧特展',
-      outline: '展區規劃包括：AI 發展史。',
-      status: 'draft',
-    };
-    curationService.generateThemes.mockResolvedValue([mockTheme]);
-
-    const { container } = render(<CurationThemeGenerator />);
-
-    // Fill form and generate
-    fireEvent.change(screen.getByLabelText(/關鍵字/), { target: { value: 'AI' } });
-    fireEvent.change(screen.getByLabelText(/當前時事熱門話題/), { target: { value: 'AI' } });
-    fireEvent.click(screen.getByRole('button', { name: /生成策展主題/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText('AI 智慧特展')).toBeInTheDocument();
-    });
-
-    // Click delete button
-    const deleteBtn = container.querySelector('.anticon-delete').closest('button');
-    fireEvent.click(deleteBtn);
-
-    await waitFor(() => {
-      expect(message.success).toHaveBeenCalledWith('主題已刪除');
-    });
-
-    expect(screen.queryByText('AI 智慧特展')).not.toBeInTheDocument();
-  });
-});
+    expect(localStorage.getItem('exported_proposal')).toContain('P-RA-1')
+    expect(mockNavigate).toHaveBeenCalledWith('/proposal')
+  })
+})

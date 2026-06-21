@@ -1,58 +1,86 @@
 .login-view-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  place-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+  padding: 24px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.82), rgba(246, 241, 233, 0.9)),
+    url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center;
 }
 
 .login-card {
-  width: 100%;
-  max-width: 400px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  background: #ffffff;
-  padding: 24px;
+  width: min(420px, 100%);
+  border: 1px solid rgba(107, 84, 48, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 70px rgba(50, 37, 18, 0.18);
+  padding: 32px;
+  backdrop-filter: blur(14px);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  color: #8c642c;
+  font-size: 27px;
+  font-weight: 850;
+}
+
+.login-brand span {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #9b7440;
+  color: #fff;
+  font-weight: 900;
 }
 
 .login-header {
-  text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
-.login-header h2 {
-  margin: 0 0 8px 0;
-  color: #1a1a1a;
-  font-size: 24px;
-  font-weight: 700;
+.login-header h1 {
+  margin: 0;
+  color: #22201d;
+  font-size: 26px;
+  font-weight: 850;
 }
 
 .login-header p {
-  margin: 0;
-  color: #666666;
-  font-size: 14px;
+  margin: 8px 0 0;
+  color: #6f665c;
+}
+
+.login-card .ant-input-affix-wrapper,
+.login-card .ant-btn {
+  border-radius: 8px;
+}
+
+.login-card .ant-btn-primary {
+  background: #8c642c;
+  border-color: #8c642c;
+  font-weight: 850;
 }
 
 .login-divider {
   display: flex;
   align-items: center;
-  text-align: center;
-  color: #999;
+  gap: 12px;
+  margin: 18px 0;
+  color: #8d8478;
   font-size: 12px;
-  margin: 16px 0;
 }
 
 .login-divider::before,
 .login-divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1px solid #e8e8e8;
-}
-
-.login-divider:not(:empty)::before {
-  margin-right: .5em;
-}
-
-.login-divider:not(:empty)::after {
-  margin-left: .5em;
+  height: 1px;
+  background: #eadfce;
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Card, Form, Input, Button, message } from 'antd'
-import { UserOutlined, LockOutlined, LoginOutlined, KeyOutlined } from 'antd/icons'
+import { Button, Form, Input, message } from 'antd'
+import { KeyRound, Lock, LogIn, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../../../services/authService'
 import './LoginView.css'
@@ -9,56 +9,54 @@ const LoginView = () => {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
+  const finishLogin = (token = 'mock-ra-session-token') => {
+    localStorage.setItem('access_token', token)
+    message.success('登入成功')
+    navigate('/')
+  }
+
   const handleLogin = async (values) => {
     setLoading(true)
     try {
-      await authService.login(values.username, values.password)
-      message.success('登入成功')
-      navigate('/')
-    } catch {
-      // Mock login fallback if backend isn't responding
-      localStorage.setItem('access_token', 'mock-sso-jwt-token')
-      message.success('登入成功 (單一登入模擬)')
-      navigate('/')
+      const response = await authService.login(values.username, values.password)
+      finishLogin(response?.access_token || response?.token)
+    } catch (error) {
+      finishLogin()
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSSOLogin = () => {
-    localStorage.setItem('access_token', 'mock-sso-jwt-token')
-    message.success('SSO 單一登入成功')
-    navigate('/')
-  }
-
   return (
     <div className="login-view-container">
-      <Card className="login-card" bordered={false}>
-        <div className="login-header">
-          <h2>📚 智慧策展系統</h2>
-          <p>請登入以存取策展管理中心</p>
+      <section className="login-card">
+        <div className="login-brand">
+          <span>R</span>
+          <strong>RA2</strong>
         </div>
-        <Form onFinish={handleLogin} layout="vertical">
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: '請輸入使用者名稱' }]}
-          >
-            <Input prefix={<UserOutlined />} placeholder="帳號 / 員編" size="large" />
+        <div className="login-header">
+          <h1>策展工作台登入</h1>
+          <p>進入主題發想、內容編排與成效洞察流程。</p>
+        </div>
+
+        <Form onFinish={handleLogin} layout="vertical" initialValues={{ username: 'curator', password: 'demo' }}>
+          <Form.Item name="username" rules={[{ required: true, message: '請輸入帳號' }]}>
+            <Input prefix={<User size={17} />} placeholder="帳號 / Email" size="large" />
           </Form.Item>
           <Form.Item name="password">
-            <Input.Password prefix={<LockOutlined />} placeholder="密碼 (一般登入)" size="large" />
+            <Input.Password prefix={<Lock size={17} />} placeholder="密碼" size="large" />
           </Form.Item>
-          <Form.Item style={{ marginBottom: '12px' }}>
-            <Button type="primary" htmlType="submit" size="large" block loading={loading} icon={<LoginOutlined />}>
-              登 入
-            </Button>
-          </Form.Item>
-          <div className="login-divider"><span>或</span></div>
-          <Button type="default" size="large" block onClick={handleSSOLogin} icon={<KeyOutlined />} style={{ background: '#f5f5f5' }}>
-            SSO 單一登入
+          <Button type="primary" htmlType="submit" size="large" block loading={loading} icon={<LogIn size={17} />}>
+            登入
           </Button>
         </Form>
-      </Card>
+
+        <div className="login-divider"><span>或</span></div>
+
+        <Button size="large" block onClick={() => finishLogin()} icon={<KeyRound size={17} />}>
+          使用 SSO 測試登入
+        </Button>
+      </section>
     </div>
   )
 }

@@ -1,2 +1,65 @@
 INFO:     127.0.0.1:2436 - "GET / HTTP/1.1" 200 OK
 INFO:     127.0.0.1:2457 - "GET /curation_management/backend/rss/trends HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11720 - "OPTIONS /curation_management/backend/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11720 - "POST /curation_management/backend/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:11720 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14104 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14104 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11720 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11720 - "OPTIONS /curation_management/backend/generate_themes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11720 - "POST /curation_management/backend/generate_themes HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:9060 - "OPTIONS /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3435 - "OPTIONS /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3435 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:9060 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3881 - "OPTIONS /curation_management/backend/catalog/upload-history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3881 - "OPTIONS /curation_management/backend/catalog/upload-history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3881 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:3881 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:3881 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:10194 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:7209 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12497 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7209 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12497 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7871 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6092 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7871 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6092 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12162 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:12162 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:12162 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2043 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2043 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12162 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12162 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2043 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3973 - "OPTIONS /curation_management/backend/export_to_proposal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3973 - "POST /curation_management/backend/export_to_proposal HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:10057 - "OPTIONS /curation_management/backend/proposals/LOCAL-RA-PROPOSAL/export?format=docx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10057 - "GET /curation_management/backend/proposals/LOCAL-RA-PROPOSAL/export?format=docx HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:11544 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11544 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11544 - "POST /curation_management/backend/generate_themes HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:9191 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:9191 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:9191 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2043 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2860 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2860 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2043 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2418 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3916 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3916 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3916 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6800 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8440 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8440 - "GET /curation_management/backend/dashboard/stats?time_range=quarter HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7207 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:7207 - "GET /curation_management/backend/catalog/upload-history HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:7207 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10176 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3367 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2383 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3367 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2383 - "GET /curation_management/backend/history HTTP/1.1" 200 OK

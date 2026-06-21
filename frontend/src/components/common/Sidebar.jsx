@@ -6,7 +6,6 @@ import {
   Database,
   Home,
   Image,
-  NotebookTabs,
   Settings,
   Sparkles,
   Users,
@@ -26,7 +25,7 @@ const projectNav = [
 const libraryNav = [
   { path: '/import', title: '資料庫', icon: Database },
   { path: '/import', title: '素材', icon: Image },
-  { path: '/proposal', title: '筆記與協作', icon: NotebookTabs },
+  { path: '/proposal', title: '筆記與協作', icon: BookOpen },
   { path: '/dashboard', title: '設定', icon: Settings },
 ]
 

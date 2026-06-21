@@ -1,81 +1,57 @@
 import apiClient from './api'
 
+const splitKeywords = (keywords) => {
+  if (Array.isArray(keywords)) return keywords.filter(Boolean)
+  if (typeof keywords !== 'string') return []
+  return keywords
+    .split(/[,，、\n]/)
+    .map((keyword) => keyword.trim())
+    .filter(Boolean)
+}
+
 export const curationService = {
-  // AI 生成策展主題
   generateThemes: async (keywords, currentTrends, holidays, customPrompt) => {
-    try {
-      const keywordsList = typeof keywords === 'string'
-        ? keywords.split(/[,，]/).map(k => k.trim()).filter(Boolean)
-        : (Array.isArray(keywords) ? keywords : []);
+    const keywordsList = splitKeywords(keywords)
+    const promptParts = [customPrompt, currentTrends && `趨勢脈絡：${currentTrends}`, holidays && `節慶或檔期：${holidays}`]
+      .filter(Boolean)
 
-      let curationType = 'trend';
-      if (customPrompt) {
-        curationType = 'custom';
-      } else if (holidays) {
-        curationType = 'festival';
-      }
+    const response = await apiClient.post('/generate_themes', {
+      curation_type: customPrompt ? 'custom' : holidays ? 'festival' : 'trend',
+      keywords: keywordsList,
+      prompt: promptParts.join('\n'),
+      year: 2026,
+    })
 
-      let combinedPrompt = customPrompt || '';
-      if (currentTrends) {
-        combinedPrompt += `\n時事熱門話題：${currentTrends}`;
-      }
-      if (holidays) {
-        combinedPrompt += `\n節慶/季節：${holidays}`;
-      }
-
-      const response = await apiClient.post('/generate_themes', {
-        curation_type: curationType,
-        keywords: keywordsList,
-        prompt: combinedPrompt.trim(),
-        year: 2026
-      })
-
-      if (response.data && response.data.status === 'success' && Array.isArray(response.data.data)) {
-        return response.data.data.map(theme => ({
-          theme_id: theme.theme_id,
-          title: theme.title,
-          outline: theme.outline,
-          target_audience: theme.target_audience || '一般讀者',
-          status: 'draft'
-        }))
-      }
-      return []
-    } catch (error) {
-      throw error
+    if (response.data?.status === 'success' && Array.isArray(response.data.data)) {
+      return response.data.data.map((theme) => ({
+        theme_id: theme.theme_id,
+        title: theme.title,
+        outline: theme.outline,
+        target_audience: theme.target_audience || '一般大眾',
+        keywords: theme.keywords || keywordsList,
+        status: theme.status || 'draft',
+      }))
     }
+
+    return []
   },
 
-  // 獲取歷史生成的主題
   getThemeHistory: async () => {
-    try {
-      const response = await apiClient.get('/history')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await apiClient.get('/history')
+    return response.data
   },
 
-  // 獲取 RSS 熱門時事關鍵字
   getTrendingKeywords: async () => {
     try {
       const response = await apiClient.get('/rss/trends')
-      if (response.data && response.data.status === 'success') {
-        return response.data.data || []
-      }
-      return []
+      return response.data?.status === 'success' ? response.data.data || [] : []
     } catch (error) {
-      console.error('無法取得熱搜關鍵字:', error)
       return []
     }
   },
 
-  // 刪除主題
   deleteTheme: async (themeId) => {
-    try {
-      const response = await apiClient.delete(`/themes/${themeId}`)
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await apiClient.delete(`/themes/${themeId}`)
+    return response.data
   },
 }

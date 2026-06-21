@@ -4,3 +4,4 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 抓取 Google Trends RSS 失敗：Client error '404 Not Found' for url 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=TW'
 For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+AI 企劃書擴寫失敗，使用降級模板：未設定 GEMINI_API_KEY 或 OPENROUTER_API_KEY，請在 .env 檔案中配置任一 API Key。

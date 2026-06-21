@@ -9,14 +9,22 @@
 .dashboard-main,
 .dashboard-rail {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 18px;
+  min-width: 0;
 }
 
 .dashboard-hero {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 24px;
+}
+
+.dashboard-hero > div:first-child {
+  min-width: 0;
+  flex: 1 1 420px;
 }
 
 .dashboard-hero h1 {

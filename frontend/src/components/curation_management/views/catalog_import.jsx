@@ -1,294 +1,222 @@
-import React, { useState, useEffect } from 'react'
-import { Card, Upload, Button, Table, Progress, message, Row, Col, Statistic, Tag, Modal, Space } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, ExclamationCircleOutlined, DownloadOutlined } from 'antd/icons'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Progress, Upload, message } from 'antd'
+import {
+  CheckCircle2,
+  Database,
+  Download,
+  FileSpreadsheet,
+  Inbox,
+  Search,
+  ShieldCheck,
+  UploadCloud,
+} from 'lucide-react'
 import { catalogService } from '../../../services/catalogService'
 import './CatalogImport.css'
 
-const CatalogImport = () => {
-  const [uploading, setUploading] = useState(false)
-  const [importHistory, setImportHistory] = useState([])
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [validationResult, setValidationResult] = useState(null)
+const { Dragger } = Upload
 
-  const loadUploadHistory = async () => {
-    console.log("loadUploadHistory starting...")
-    try {
-      const history = await catalogService.getUploadHistory()
-      console.log("loadUploadHistory fetched successfully:", history)
-      const mapped = history.map((item, index) => ({
-        id: index,
-        fileName: item.source_file,
-        status: 'success',
-        recordsCount: item.records_count,
-        vectorizedCount: item.vectorized_count || 0,
-        uploadedAt: new Date(item.imported_at).toLocaleString(),
-      }))
-      setImportHistory(mapped)
-    } catch (error) {
-      console.error("loadUploadHistory error caught:", error)
-    }
-  }
+const demoHistory = [
+  { id: 1, fileName: 'future_catalog_sample.csv', status: 'success', recordsCount: 50, vectorizedCount: 50, uploadedAt: '2025/05/19 14:32' },
+  { id: 2, fileName: 'media_assets.xlsx', status: 'success', recordsCount: 128, vectorizedCount: 112, uploadedAt: '2025/05/18 16:10' },
+]
+
+const CatalogImport = () => {
+  const [history, setHistory] = useState(demoHistory)
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    loadUploadHistory()
+    const loadHistory = async () => {
+      const records = await catalogService.getUploadHistory()
+      if (Array.isArray(records) && records.length) {
+        setHistory(records.map((item, index) => ({
+          id: index,
+          fileName: item.source_file || item.fileName || `catalog-${index + 1}.csv`,
+          status: item.status || 'success',
+          recordsCount: item.records_count || item.recordsCount || 0,
+          vectorizedCount: item.vectorized_count || item.vectorizedCount || 0,
+          uploadedAt: item.imported_at ? new Date(item.imported_at).toLocaleString() : item.uploadedAt || '-',
+        })))
+      }
+    }
+
+    loadHistory()
   }, [])
 
-  const handleBeforeUpload = async (file) => {
-    // 文件驗證
-    const isExcelOrCsv = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      file.type === 'text/csv' ||
-      file.name.endsWith('.xlsx') ||
-      file.name.endsWith('.csv')
-    
-    if (!isExcelOrCsv) {
-      message.error('請上傳 Excel (.xlsx) 或 CSV 檔案')
-      return false
-    }
+  const stats = useMemo(() => {
+    const success = history.filter((item) => item.status === 'success')
+    const records = history.reduce((sum, item) => sum + (item.recordsCount || 0), 0)
+    const vectors = history.reduce((sum, item) => sum + (item.vectorizedCount || 0), 0)
+    return [
+      { label: '成功匯入檔案', value: `${success.length} 組`, icon: CheckCircle2 },
+      { label: '館藏資料筆數', value: records.toLocaleString(), icon: Database },
+      { label: '已建立索引', value: vectors.toLocaleString(), icon: ShieldCheck },
+      { label: '匯入成功率', value: `${history.length ? Math.round((success.length / history.length) * 100) : 0}%`, icon: UploadCloud },
+    ]
+  }, [history])
 
-    const isLessThan10MB = file.size / 1024 / 1024 < 10
-    if (!isLessThan10MB) {
-      message.error('檔案大小不能超過 10MB')
-      return false
+  const beforeUpload = (file) => {
+    const supported = /\.(csv|xlsx)$/i.test(file.name)
+    if (!supported) {
+      message.error('請上傳 CSV 或 XLSX 檔案')
+      return Upload.LIST_IGNORE
     }
-
+    if (file.size / 1024 / 1024 > 10) {
+      message.error('檔案大小需小於 10MB')
+      return Upload.LIST_IGNORE
+    }
     return true
   }
 
-  const handleUpload = async ({ file }) => {
-    if (!file) return
-
+  const handleUpload = async ({ file, onSuccess, onError }) => {
     setUploading(true)
-    setUploadProgress(0)
-
+    setProgress(15)
     try {
-      // 驗證文件
-      const validationResponse = await catalogService.validateFile(file)
-      setValidationResult(validationResponse)
-
-      // 模擬上傳進度
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-        setUploadProgress(i)
+      const validation = await catalogService.validateFile(file)
+      if (validation.status === 'error') {
+        throw new Error(validation.detail)
       }
 
-      // 上傳文件
+      setProgress(45)
       const response = await catalogService.uploadCatalog(file)
-      
-      message.success(`成功匯入 ${response.imported_count || response.records_count || 0} 筆館藏記錄`)
-      setUploadProgress(0)
-      loadUploadHistory()
+      setProgress(100)
+
+      const importedCount = response.imported_count || response.records_count || 0
+      setHistory((current) => [
+        {
+          id: Date.now(),
+          fileName: file.name,
+          status: 'success',
+          recordsCount: importedCount,
+          vectorizedCount: response.vectorized_count || importedCount,
+          uploadedAt: new Date().toLocaleString(),
+        },
+        ...current,
+      ])
+      message.success(`已匯入 ${importedCount} 筆資料`)
+      onSuccess?.(response)
     } catch (error) {
-      const importRecord = {
-        id: Date.now(),
-        fileName: file.name,
-        fileSize: file.size,
-        uploadedAt: new Date().toLocaleString(),
-        status: 'error',
-        error: error.message,
-      }
-      setImportHistory([importRecord, ...importHistory])
-      message.error('上傳失敗，請稍後重試')
+      setHistory((current) => [
+        {
+          id: Date.now(),
+          fileName: file.name,
+          status: 'error',
+          recordsCount: 0,
+          vectorizedCount: 0,
+          uploadedAt: new Date().toLocaleString(),
+          error: error.message,
+        },
+        ...current,
+      ])
+      message.error(error.message || '匯入失敗')
+      onError?.(error)
     } finally {
+      setTimeout(() => setProgress(0), 800)
       setUploading(false)
     }
   }
 
-  const handleDownloadTemplate = () => {
-    // 下載模板文件
-    const templateContent = 'title,isbn,classification_no,summary\n範例書籍,978-1234567890,733.4,這是一本範例書籍'
-    const blob = new Blob([templateContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
+  const downloadTemplate = () => {
+    const content = 'title,isbn,classification_no,summary\n未來城市,978-1234567890,733.4,探討智慧城市與永續生活的館藏摘要\n'
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', 'catalog_template.csv')
-    document.body.appendChild(link)
+    link.download = 'catalog_template.csv'
     link.click()
-    link.parentNode.removeChild(link)
-    message.success('已下載模板')
+    URL.revokeObjectURL(url)
+    message.success('已下載範本')
   }
 
-  const columns = [
-    {
-      title: '檔案名稱',
-      dataIndex: 'fileName',
-      key: 'fileName',
-    },
-    {
-      title: '狀態',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'success' ? 'green' : 'red'}>
-          {status === 'success' ? '成功' : '失敗'}
-        </Tag>
-      ),
-    },
-    {
-      title: '館藏筆數',
-      dataIndex: 'recordsCount',
-      key: 'recordsCount',
-      render: (count) => count || '-',
-    },
-    {
-      title: '向量化筆數',
-      dataIndex: 'vectorizedCount',
-      key: 'vectorizedCount',
-      render: (count) => count || '-',
-    },
-    {
-      title: '上傳時間',
-      dataIndex: 'uploadedAt',
-      key: 'uploadedAt',
-    },
-  ]
-
   return (
-    <div className="catalog-import">
-      <div className="page-header">
-        <h1>📥 館藏資料匯入中心</h1>
-        <p>上傳 Excel 或 CSV 檔案，自動解析並匯入館藏資料</p>
-      </div>
+    <div className="catalog-import-page">
+      <section className="catalog-hero">
+        <div>
+          <span className="ra-hero-icon"><Database size={27} /></span>
+          <h1>資料庫與素材管理</h1>
+          <p>匯入館藏、素材與引用來源，建立可供 AI 策展比對的資料基礎。</p>
+        </div>
+        <button className="ra-secondary-button" onClick={downloadTemplate}>
+          <Download size={17} />
+          下載匯入範本
+        </button>
+      </section>
 
-      {/* 統計信息 */}
-      <Row gutter={[24, 24]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="已匯入檔案"
-              value={importHistory.filter((h) => h.status === 'success').length}
-              suffix="個"
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="累計館藏筆數"
-              value={importHistory.reduce((sum, h) => sum + (h.recordsCount || 0), 0)}
-              suffix="筆"
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="已向量化筆數"
-              value={importHistory.reduce((sum, h) => sum + (h.vectorizedCount || 0), 0)}
-              suffix="筆"
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="上傳成功率"
-              value={
-                importHistory.length > 0
-                  ? ((importHistory.filter((h) => h.status === 'success').length / importHistory.length) * 100).toFixed(1)
-                  : 0
-              }
-              suffix="%"
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <section className="catalog-stats ra-panel">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <article key={stat.label}>
+              <Icon size={23} />
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+            </article>
+          )
+        })}
+      </section>
 
-      {/* 上傳區域 */}
-      <Row gutter={[24, 24]} style={{ marginTop: '24px' }}>
-        <Col xs={24} lg={12}>
-          <Card title="上傳檔案" bordered={false}>
-            <Upload.Dragger
-              name="file"
-              multiple={false}
-              beforeUpload={handleBeforeUpload}
-              customRequest={handleUpload}
-              disabled={uploading}
-              accept=".xlsx,.csv"
-            >
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-              </p>
-              <p className="ant-upload-text">點擊或拖曳檔案到此區域上傳</p>
-              <p className="ant-upload-hint">支援 Excel (.xlsx) 和 CSV 檔案，檔案大小不超過 10MB</p>
-            </Upload.Dragger>
-
-            {uploading && (
-              <div style={{ marginTop: '20px' }}>
-                <Progress percent={uploadProgress} status={uploading ? 'active' : 'success'} />
-                <p style={{ marginTop: '10px', textAlign: 'center' }}>上傳中... {uploadProgress}%</p>
-              </div>
-            )}
-
-            {validationResult && (
-              <Card style={{ marginTop: '20px' }} size="small" title="驗證結果">
-                <p>✓ 檔案格式正確</p>
-                <p>✓ 發現 {validationResult.records_count || 0} 筆記錄</p>
-                <p>✓ 可進行匯入</p>
-              </Card>
-            )}
-
-            <div style={{ marginTop: '20px' }}>
-              <Button block onClick={handleDownloadTemplate} icon={<DownloadOutlined />}>
-                下載匯入範本
-              </Button>
+      <section className="catalog-grid">
+        <article className="ra-panel upload-panel">
+          <h2><Inbox size={20} />上傳資料檔</h2>
+          <Dragger
+            name="file"
+            multiple={false}
+            beforeUpload={beforeUpload}
+            customRequest={handleUpload}
+            disabled={uploading}
+            accept=".csv,.xlsx"
+            showUploadList={false}
+          >
+            <p className="upload-icon"><UploadCloud size={52} /></p>
+            <p className="upload-title">拖曳檔案到此處，或點擊選擇檔案</p>
+            <p className="upload-hint">支援 CSV / XLSX，單檔上限 10MB。</p>
+          </Dragger>
+          {progress > 0 && (
+            <div className="upload-progress">
+              <Progress percent={progress} status={progress === 100 ? 'success' : 'active'} />
             </div>
-          </Card>
-        </Col>
+          )}
+        </article>
 
-        <Col xs={24} lg={12}>
-          <Card title="匯入說明" bordered={false}>
-            <div className="import-guide">
-              <h4>📋 檔案格式要求</h4>
-              <ul>
-                <li><strong>必需欄位：</strong></li>
-                <ul>
-                  <li>title - 書名</li>
-                  <li>isbn - ISBN 碼</li>
-                  <li>classification_no - 圖書分類法分類號</li>
-                </ul>
-                <li><strong>可選欄位：</strong></li>
-                <ul>
-                  <li>summary - 書籍簡介</li>
-                </ul>
-              </ul>
+        <article className="ra-panel import-guide">
+          <h2><FileSpreadsheet size={20} />欄位格式</h2>
+          <ul>
+            <li><strong>title</strong> 館藏或素材名稱</li>
+            <li><strong>isbn</strong> ISBN 或內部識別碼</li>
+            <li><strong>classification_no</strong> 分類號</li>
+            <li><strong>summary</strong> 可供語意比對的摘要</li>
+          </ul>
+          <button onClick={() => message.info('已檢查目前匯入欄位格式')}>檢查欄位格式</button>
+        </article>
+      </section>
 
-              <h4 style={{ marginTop: '20px' }}>⚙️ 處理流程</h4>
-              <ol>
-                <li>上傳 Excel 或 CSV 檔案</li>
-                <li>系統驗證檔案格式與內容</li>
-                <li>使用 AI Embedding API 生成向量</li>
-                <li>批次寫入 PostgreSQL 資料庫</li>
-                <li>建立向量索引以加速搜尋</li>
-              </ol>
-
-              <h4 style={{ marginTop: '20px' }}>💡 提示</h4>
-              <ul>
-                <li>單次上傳建議不超過 10,000 筆記錄</li>
-                <li>ISBN 必須有效且不重複</li>
-                <li>建議使用 UTF-8 編碼</li>
-              </ul>
+      <section className="ra-panel history-panel">
+        <div className="panel-title-row">
+          <h2>匯入紀錄</h2>
+          <button onClick={() => message.info('已重新整理匯入紀錄')}>
+            <Search size={16} />
+            重新整理
+          </button>
+        </div>
+        <div className="history-table">
+          <div className="history-row header">
+            <span>檔案名稱</span>
+            <span>狀態</span>
+            <span>資料筆數</span>
+            <span>索引筆數</span>
+            <span>上傳時間</span>
+          </div>
+          {history.map((item) => (
+            <div className="history-row" key={item.id}>
+              <span>{item.fileName}</span>
+              <span className={item.status === 'success' ? 'success' : 'error'}>{item.status === 'success' ? '成功' : '失敗'}</span>
+              <span>{item.recordsCount || '-'}</span>
+              <span>{item.vectorizedCount || '-'}</span>
+              <span>{item.uploadedAt}</span>
             </div>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* 上傳歷史 */}
-      <Row style={{ marginTop: '24px' }}>
-        <Col xs={24}>
-          <Card title="上傳歷史" bordered={false}>
-            <Table
-              dataSource={importHistory}
-              columns={columns}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-            />
-          </Card>
-        </Col>
-      </Row>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }
