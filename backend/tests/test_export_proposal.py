@@ -46,6 +46,7 @@ def test_export_proposal_docx():
     assert response is not None
     assert response.media_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     assert "Content-Disposition" in response.headers
+    assert 'filename="proposal.docx"' in response.headers["Content-Disposition"]
 
 def test_export_proposal_pdf():
     proposal = Proposal(
@@ -64,3 +65,4 @@ def test_export_proposal_pdf():
     assert response is not None
     assert response.media_type == "application/pdf"
     assert "Content-Disposition" in response.headers
+    assert 'filename="proposal.pdf"' in response.headers["Content-Disposition"]

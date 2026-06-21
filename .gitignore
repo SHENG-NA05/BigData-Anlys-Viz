@@ -5,6 +5,8 @@ skills-lock.json
 # Node modules
 node_modules/
 dist/
+playwright-report/
+test-results/
 .env
 
 # Python caching & venv

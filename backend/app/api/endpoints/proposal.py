@@ -478,9 +478,13 @@ def export_proposal(
         filename = f"{proposal.title}.pdf"
 
     encoded_filename = quote(filename)
+    fallback_filename = f"proposal.{format}"
     headers = {
         "Access-Control-Expose-Headers": "Content-Disposition",
-        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+        "Content-Disposition": (
+            f'attachment; filename="{fallback_filename}"; '
+            f"filename*=UTF-8''{encoded_filename}"
+        ),
     }
 
     return StreamingResponse(io.BytesIO(content), media_type=media_type, headers=headers)
