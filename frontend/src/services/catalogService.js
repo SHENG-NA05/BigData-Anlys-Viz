@@ -6,7 +6,7 @@ export const catalogService = {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const response = await apiClient.post('/catalog/upload', formData, {
+      const response = await apiClient.post('/catalog/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -19,27 +19,29 @@ export const catalogService = {
 
   // 獲取上傳歷史
   getUploadHistory: async () => {
-    try {
-      const response = await apiClient.get('/catalog/upload-history')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    return { data: [] }
   },
 
   // 驗證上傳文件
   validateFile: async (file) => {
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const response = await apiClient.post('/catalog/validate', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-      return response.data
-    } catch (error) {
-      throw error
+    if (file.name.toLowerCase().endsWith('.xlsx')) {
+      return {
+        status: 'success',
+        records_count: 0,
+      }
+    }
+
+    const text = await file.text()
+    const [headerLine = '', ...rows] = text.split(/\r?\n/).filter(Boolean)
+    const headers = headerLine.split(',').map((item) => item.trim().toLowerCase())
+    const required = ['title', 'isbn', 'classification_no']
+    const missing = required.filter((item) => !headers.includes(item))
+    if (missing.length > 0) {
+      throw new Error(`缺少必要欄位：${missing.join(', ')}`)
+    }
+    return {
+      status: 'success',
+      records_count: rows.length,
     }
   },
 }

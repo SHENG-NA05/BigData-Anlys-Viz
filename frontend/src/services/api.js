@@ -1,6 +1,10 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const normalizedApiUrl = rawApiUrl.replace(/\/$/, '')
+const API_BASE_URL = normalizedApiUrl.endsWith('/curation_management/backend')
+  ? normalizedApiUrl
+  : `${normalizedApiUrl}/curation_management/backend`
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

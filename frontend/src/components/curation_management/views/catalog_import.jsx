@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Card, Upload, Button, Table, Progress, message, Row, Col, Statistic, Tag, Modal, Space } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, ExclamationCircleOutlined, DownloadOutlined } from 'antd/icons'
+import { InboxOutlined, CheckCircleOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons'
 import { catalogService } from '../../../services/catalogService'
 import './CatalogImport.css'
 
@@ -31,7 +31,7 @@ const CatalogImport = () => {
     return true
   }
 
-  const handleUpload = async ({ file }) => {
+  const handleUpload = async ({ file, onSuccess, onError }) => {
     if (!file) return
 
     setUploading(true)
@@ -58,24 +58,27 @@ const CatalogImport = () => {
         fileSize: file.size,
         uploadedAt: new Date().toLocaleString(),
         status: 'success',
-        recordsCount: response.records_count || Math.floor(Math.random() * 1000) + 100,
-        vectorizedCount: response.vectorized_count || Math.floor(Math.random() * 1000) + 50,
+        recordsCount: response.imported_count || response.records_count || 0,
+        vectorizedCount: response.imported_count || response.vectorized_count || 0,
       }
 
       setImportHistory([importRecord, ...importHistory])
       message.success(`成功匯入 ${importRecord.recordsCount} 筆館藏記錄`)
       setUploadProgress(0)
+      onSuccess?.(response)
     } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.message || '上傳失敗，請稍後重試'
       const importRecord = {
         id: Date.now(),
         fileName: file.name,
         fileSize: file.size,
         uploadedAt: new Date().toLocaleString(),
         status: 'error',
-        error: error.message,
+        error: errorMessage,
       }
       setImportHistory([importRecord, ...importHistory])
-      message.error('上傳失敗，請稍後重試')
+      message.error(errorMessage)
+      onError?.(error)
     } finally {
       setUploading(false)
     }
@@ -83,7 +86,7 @@ const CatalogImport = () => {
 
   const handleDownloadTemplate = () => {
     // 下載模板文件
-    const templateContent = 'title,isbn,classification_no,summary\n範例書籍,978-1234567890,733.4,這是一本範例書籍'
+    const templateContent = 'title,isbn,classification_no,author,publisher,publication_year,summary\n範例書籍,978-1234567890,733.4,王小明,示範出版社,2025,這是一本範例書籍'
     const blob = new Blob([templateContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -127,6 +130,12 @@ const CatalogImport = () => {
       title: '上傳時間',
       dataIndex: 'uploadedAt',
       key: 'uploadedAt',
+    },
+    {
+      title: '錯誤訊息',
+      dataIndex: 'error',
+      key: 'error',
+      render: (error) => error || '-',
     },
   ]
 
