@@ -63,3 +63,7 @@ INFO:     127.0.0.1:3367 - "OPTIONS /curation_management/backend/history HTTP/1.
 INFO:     127.0.0.1:2383 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
 INFO:     127.0.0.1:3367 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
 INFO:     127.0.0.1:2383 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8199 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4994 - "OPTIONS /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8199 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4994 - "GET /curation_management/backend/history HTTP/1.1" 200 OK
