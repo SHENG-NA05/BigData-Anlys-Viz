@@ -1,0 +1,6 @@
+INFO:     Started server process [17184]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+§ì¨ú Google Trends RSS ¥¢±Ñ¡GClient error '404 Not Found' for url 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=TW'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404

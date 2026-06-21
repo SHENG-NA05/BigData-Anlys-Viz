@@ -55,6 +55,20 @@ export const curationService = {
     }
   },
 
+  // 獲取 RSS 熱門時事關鍵字
+  getTrendingKeywords: async () => {
+    try {
+      const response = await apiClient.get('/rss/trends')
+      if (response.data && response.data.status === 'success') {
+        return response.data.data || []
+      }
+      return []
+    } catch (error) {
+      console.error('無法取得熱搜關鍵字:', error)
+      return []
+    }
+  },
+
   // 刪除主題
   deleteTheme: async (themeId) => {
     try {

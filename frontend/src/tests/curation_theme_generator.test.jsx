@@ -9,6 +9,7 @@ jest.mock('../services/curationService', () => ({
   curationService: {
     generateThemes: jest.fn(),
     getThemeHistory: jest.fn(() => Promise.resolve({ data: [] })),
+    getTrendingKeywords: jest.fn(() => Promise.resolve(['ChatGPT', 'AI人工智慧'])),
     deleteTheme: jest.fn(() => Promise.resolve({ status: 'success' })),
   },
 }));
@@ -32,8 +33,11 @@ jest.mock('../services/catalogService', () => ({
 describe('CurationThemeGenerator Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    curationService.getThemeHistory.mockResolvedValue({ data: [] });
+    curationService.getTrendingKeywords.mockResolvedValue(['ChatGPT', 'AI人工智慧']);
     message.success = jest.fn();
     message.error = jest.fn();
+    message.info = jest.fn();
   });
 
   test('renders generator page and initial empty state', () => {
@@ -53,6 +57,16 @@ describe('CurationThemeGenerator Component', () => {
       expect(screen.getByText('請輸入關鍵字')).toBeInTheDocument();
       expect(screen.getByText('請輸入時事')).toBeInTheDocument();
     });
+  });
+
+  test('loads trending keyword tags and appends clicked tag to trends field', async () => {
+    render(<CurationThemeGenerator />);
+
+    const trendTag = await screen.findByText('ChatGPT');
+    fireEvent.click(trendTag);
+
+    expect(screen.getByLabelText(/當前時事熱門話題/)).toHaveValue('ChatGPT');
+    expect(message.info).toHaveBeenCalledWith('已加入時事關鍵字：ChatGPT');
   });
 
   test('successfully generates theme and renders card', async () => {

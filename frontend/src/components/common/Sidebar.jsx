@@ -1,69 +1,124 @@
 import React from 'react'
-import { Layout, Menu, Avatar, Dropdown, Space } from 'antd'
-import { LayoutOutlined, BgColorsOutlined, BarChartOutlined, ImportOutlined, LogoutOutlined, UserOutlined } from 'antd/icons'
-import { useNavigate } from 'react-router-dom'
+import { Layout, Modal, message } from 'antd'
+import {
+  BarChart3,
+  BookOpen,
+  Database,
+  Home,
+  Image,
+  NotebookTabs,
+  Settings,
+  Sparkles,
+  Users,
+} from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/authService'
 import './Sidebar.css'
 
 const { Sider } = Layout
 
+const projectNav = [
+  { path: '/', title: '策展前', subtitle: '主題探索與發想', icon: Sparkles },
+  { path: '/proposal', title: '策展中', subtitle: '內容整合與編排', icon: BookOpen },
+  { path: '/dashboard', title: '策展後', subtitle: '效益分析與推廣', icon: BarChart3 },
+]
+
+const libraryNav = [
+  { path: '/import', title: '資料庫', icon: Database },
+  { path: '/import', title: '素材', icon: Image },
+  { path: '/proposal', title: '筆記與協作', icon: NotebookTabs },
+  { path: '/dashboard', title: '設定', icon: Settings },
+]
+
 const Sidebar = () => {
+  const location = useLocation()
   const navigate = useNavigate()
 
-  const menuItems = [
-    {
-      key: '1',
-      icon: <BgColorsOutlined />,
-      label: 'AI 智慧發想',
-      onClick: () => navigate('/'),
-    },
-    {
-      key: '2',
-      icon: <LayoutOutlined />,
-      label: '企劃管理中心',
-      onClick: () => navigate('/proposal'),
-    },
-    {
-      key: '3',
-      icon: <BarChartOutlined />,
-      label: '效益戰情室',
-      onClick: () => navigate('/dashboard'),
-    },
-    {
-      key: '4',
-      icon: <ImportOutlined />,
-      label: '館藏導入',
-      onClick: () => navigate('/import'),
-    },
-  ]
+  const go = (path) => navigate(path)
 
-  const userMenuItems = [
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '登出',
-      onClick: () => {
-        authService.logout()
-        navigate('/login')
-      },
-    },
-  ]
+  const openSettings = () => {
+    Modal.info({
+      title: '專案設定',
+      content: '目前專案為「未來之境：人與科技的共生想像」，可管理展期、協作者與輸出格式。',
+      okText: '完成',
+    })
+  }
 
   return (
-    <Sider theme="dark" className="sidebar">
-      <div className="sidebar-logo">
-        <h2 style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>
-          📚 智慧策展系統
-        </h2>
+    <Sider width={292} className="ra-sidebar">
+      <div className="ra-brand" onClick={() => go('/')} role="button" tabIndex={0}>
+        <span className="ra-brand-mark">R</span>
+        <span>RA2</span>
       </div>
-      <Menu theme="dark" mode="inline" items={menuItems} />
-      <div className="sidebar-footer">
-        <Space>
-          <Avatar size={40} icon={<UserOutlined />} />
-          <Dropdown menu={{ items: userMenuItems }} placement="topRight">
-            <span style={{ cursor: 'pointer', color: '#fff' }}>策展人</span>
-          </Dropdown>
-        </Space>
+
+      <div className="ra-sidebar-scroll">
+        <section className="ra-side-section">
+          <div className="ra-side-label">專案</div>
+          <div className="ra-project-card">
+            <div className="ra-project-cover" />
+            <div>
+              <strong>未來之境：</strong>
+              <span>人與科技的共生想像</span>
+              <em>更新於 2025/05/19</em>
+            </div>
+          </div>
+        </section>
+
+        <nav className="ra-side-nav">
+          <button className={location.pathname === '/home' ? 'active' : ''} onClick={() => go('/')}>
+            <Home size={18} />
+            <span>首頁</span>
+          </button>
+
+          {projectNav.map((item) => {
+            const Icon = item.icon
+            const active = location.pathname === item.path
+            return (
+              <button key={item.title} className={active ? 'active' : ''} onClick={() => go(item.path)}>
+                <Icon size={18} />
+                <span>
+                  <strong>{item.title}</strong>
+                  <small>{item.subtitle}</small>
+                </span>
+                <i />
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="ra-side-divider" />
+
+        <nav className="ra-side-nav compact">
+          {libraryNav.map((item) => {
+            const Icon = item.icon
+            return (
+              <button key={item.title} onClick={() => go(item.path)}>
+                <Icon size={18} />
+                <span>{item.title}</span>
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      <div className="ra-sidebar-footer">
+        <button onClick={() => message.success('已建立團隊邀請連結')}>
+          <Users size={17} />
+          邀請團隊成員
+        </button>
+        <button onClick={openSettings}>
+          <Settings size={17} />
+          專案設定
+        </button>
+        <button
+          className="ra-logout"
+          onClick={() => {
+            authService.logout()
+            navigate('/login')
+          }}
+        >
+          登出
+        </button>
       </div>
     </Sider>
   )

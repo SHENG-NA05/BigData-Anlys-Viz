@@ -1,0 +1,30 @@
+
+> library-smart-curation-ui@0.1.0 dev
+> vite --host 127.0.0.1 --port 5173 --strictPort
+
+
+  [32m[1mVITE[22m v4.5.14[39m  [2mready in [0m[1m297[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m下午4:41:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/MainLayout.jsx[22m
+[2m下午4:41:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/MainLayout.jsx[22m
+[2m下午4:41:32[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33mlucide-react[32m[39m
+[2m下午4:41:32[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m下午4:41:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/MainLayout.css[22m
+[2m下午4:41:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/MainLayout.css[22m
+[2m下午4:41:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/Sidebar.jsx[22m
+[2m下午4:41:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/Sidebar.jsx[22m
+[2m下午4:41:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/Sidebar.css[22m
+[2m下午4:41:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/Sidebar.css[22m
+[2m下午4:43:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/curation_theme_generator.jsx[22m
+[2m下午4:43:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/curation_theme_generator.jsx[22m
+[2m下午4:43:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/CurationThemeGenerator.css[22m
+[2m下午4:43:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/CurationThemeGenerator.css[22m
+[2m下午4:45:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/proposal_editor.jsx[22m
+[2m下午4:45:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/proposal_editor.jsx[22m
+[2m下午4:45:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/ProposalEditor.css[22m
+[2m下午4:45:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/ProposalEditor.css[22m
+[2m下午4:47:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/dashboard_view.jsx[22m
+[2m下午4:47:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/dashboard_view.jsx[22m
+[2m下午4:47:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/DashboardView.css[22m
+[2m下午4:47:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/curation_management/views/DashboardView.css[22m
