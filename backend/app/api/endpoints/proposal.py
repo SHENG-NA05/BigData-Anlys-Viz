@@ -277,6 +277,9 @@ def register_chinese_font():
         "C:/Windows/Fonts/msyh.ttf",
         "C:/Windows/Fonts/simsun.ttc",
         "C:/Windows/Fonts/simsun.ttf",
+        # Linux / Docker 容器字型路徑（正式部署用）
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttf",
     ]
     for path in font_paths:
         if os.path.exists(path):

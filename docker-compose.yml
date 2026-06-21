@@ -31,7 +31,7 @@ services:
       - ./backend:/app
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/curation_db
-      GEMINI_API_KEY: mock-api-key
+      GEMINI_API_KEY: 
       OPENROUTER_API_KEY: ""
 
   frontend:
