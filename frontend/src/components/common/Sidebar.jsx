@@ -1,4 +1,3 @@
-import React from 'react'
 import { Layout, Modal, message } from 'antd'
 import {
   BarChart3,

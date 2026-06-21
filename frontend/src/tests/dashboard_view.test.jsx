@@ -1,4 +1,3 @@
-import React from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { message } from 'antd'
 import DashboardView from '../components/curation_management/views/dashboard_view'

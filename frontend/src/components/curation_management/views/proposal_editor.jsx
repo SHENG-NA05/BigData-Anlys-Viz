@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Spin, message } from 'antd'
 import { BookOpen, FileDown, FileText, RefreshCw, Save, Sparkles } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
@@ -23,11 +23,11 @@ const downloadBlob = (filename, blob) => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = filename
+  link.setAttribute('download', filename)
   document.body.appendChild(link)
   link.click()
   link.remove()
-  URL.revokeObjectURL(url)
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 const ProposalEditor = () => {
@@ -49,21 +49,21 @@ const ProposalEditor = () => {
     [proposals, selectedProposalId],
   )
 
-  const applyProposal = (proposal) => {
+  const applyProposal = useCallback((proposal) => {
     setSelectedProposalId(proposal.id)
     setTitle(proposal.title)
     setContent(proposal.content)
     setStatus(proposal.status)
     setMatchedBooks(proposal.matchedBooks)
-  }
+  }, [])
 
-  const loadProposals = async (showSuccess = false) => {
+  const loadProposals = useCallback(async (showSuccess = false, preferredProposalId = null) => {
     setLoading(true)
     try {
       const response = await proposalService.listProposals()
       const items = (response?.data || []).map(normalizeProposal)
       setProposals(items)
-      const next = items.find((item) => item.id === (requestedProposalId || selectedProposalId)) || items[0]
+      const next = items.find((item) => item.id === (requestedProposalId || preferredProposalId)) || items[0]
       if (next) {
         applyProposal(next)
       } else {
@@ -78,11 +78,11 @@ const ProposalEditor = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [applyProposal, requestedProposalId])
 
   useEffect(() => {
     loadProposals()
-  }, [])
+  }, [loadProposals])
 
   const handleSave = async () => {
     if (!selectedProposalId || !title.trim()) return
@@ -150,7 +150,7 @@ const ProposalEditor = () => {
             <h1>策展企劃管理</h1>
             <p>讀取、編輯、匹配與匯出資料庫中的企劃書。</p>
           </div>
-          <button className="ra-secondary-button" onClick={() => loadProposals(true)}>
+          <button className="ra-secondary-button" onClick={() => loadProposals(true, selectedProposalId)}>
             <RefreshCw size={17} />更新清單
           </button>
         </section>

@@ -1,77 +1,98 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
-test.describe('Smart Curation System E2E Real DB Integration', () => {
-  test('successfully runs complete curation workflow with real backend and DB', async ({ page }) => {
-    // ----------------------------------------------------
-    // STEP 1: Real Login Flow
-    // ----------------------------------------------------
-    await page.goto('/login');
-    await expect(page.locator('h2')).toContainText('智慧策展系統');
+test.describe('Smart Curation System real backend workflow', () => {
+  test('runs login, catalog, theme, proposal, export and dashboard flows', async ({ page }) => {
+    test.setTimeout(180_000)
+    const runId = Date.now()
 
-    // Fill in real demo credentials
-    await page.fill('input[placeholder="帳號 / 員編"]', 'demo_curator');
-    await page.fill('input[placeholder="密碼 (一般登入)"]', 'demo-password-for-local-testing-only');
+    await page.goto('/login')
+    await expect(page.getByRole('heading', { name: '策展工作台登入' })).toBeVisible()
+    await page.getByPlaceholder('帳號 / Email').fill('demo_curator')
+    await page.getByPlaceholder('密碼').fill('demo-password-for-local-testing-only')
+    await page.getByRole('button', { name: '登入' }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
 
-    // Click Login
-    await page.click('button:has-text("登 入")');
-    
-    // Should successfully redirect to the main page /
-    await expect(page).toHaveURL('/');
+    await page.getByRole('button', { name: '資料庫' }).click()
+    await expect(page).toHaveURL(/\/import$/)
+    await expect(page.getByRole('heading', { name: '資料庫與素材管理' })).toBeVisible()
+    await expect(page.getByText('fake_catalog_sample.csv')).toBeVisible()
 
-    // ----------------------------------------------------
-    // STEP 2: Catalog Books Import Flow
-    // ----------------------------------------------------
-    await page.click('.sidebar .ant-menu-item:has-text("館藏導入")');
-    await expect(page.locator('.page-header h1')).toContainText('館藏資料匯入中心');
-
-    // Read the initial count
-    const initialCountText = await page.locator('.ant-statistic-title:has-text("累計館藏筆數") + .ant-statistic-content .ant-statistic-content-value-int').textContent();
-    const initialCount = parseInt(initialCountText.replace(/,/g, '').trim(), 10);
-    console.log('Initial count in DB:', initialCount);
-
-    // Verify seeded catalog data exists
-    await expect(page.locator('.ant-table-row').filter({ hasText: 'fake_catalog_sample.csv' })).toBeVisible();
-
-    // Simulate uploading a new CSV file
-    const dynamicFilename = `real_test_catalog_${Date.now()}.csv`;
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.click('.ant-upload-drag');
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles({
-      name: dynamicFilename,
+    const filename = `e2e_catalog_${runId}.csv`
+    const uploadResponse = page.waitForResponse((response) => (
+      response.url().endsWith('/catalog/import') && response.request().method() === 'POST'
+    ))
+    await page.locator('input[type="file"]').setInputFiles({
+      name: filename,
       mimeType: 'text/csv',
-      buffer: Buffer.from('title,isbn,classification_no,summary\nE2E Test Book,9781234567899,733.4,This is a test book.'),
-    });
+      buffer: Buffer.from(
+        `title,isbn,classification_no,summary\nE2E Vector Book ${runId},978${String(runId).slice(-10)},540.1,AI data visualization integration test`,
+      ),
+    })
+    expect((await uploadResponse).status()).toBe(200)
+    await expect(page.getByText(filename)).toBeVisible({ timeout: 30_000 })
 
-    // Check successful import message and table row updates
-    await expect(page.locator('.ant-message-success:has-text("成功匯入 1 筆館藏記錄")')).toBeVisible({ timeout: 10000 });
-    
-    // Verify that the new file exists in the upload history table
-    await expect(page.locator('.ant-table-row').filter({ hasText: dynamicFilename })).toBeVisible();
+    await page.getByRole('button', { name: /\u7b56展前/ }).click()
+    await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
+    await page.getByLabel('關鍵詞').fill(`AI、資料閱讀、${runId}`)
+    await page.getByLabel('補充需求').fill('產生適合公共圖書館的策展主題')
+    const initialThemeCount = await page.locator('.theme-option-card').count()
+    const generateResponse = page.waitForResponse((response) => (
+      response.url().endsWith('/generate_themes') && response.request().method() === 'POST'
+    ))
+    await page.getByRole('button', { name: '產生主題' }).click()
+    expect((await generateResponse).status()).toBe(200)
+    await expect(page.locator('.theme-option-card')).toHaveCount(initialThemeCount + 3, { timeout: 60_000 })
 
-    // Verify stats updated to initialCount + 1
-    const expectedCount = initialCount + 1;
-    await expect(page.locator('.ant-statistic-title:has-text("累計館藏筆數") + .ant-statistic-content .ant-statistic-content-value-int')).toContainText(expectedCount.toString());
+    const createResponse = page.waitForResponse((response) => (
+      response.url().endsWith('/export_to_proposal') && response.request().method() === 'POST'
+    ))
+    await page.getByRole('button', { name: /建立企劃書/ }).click()
+    expect((await createResponse).status()).toBe(200)
+    await expect(page).toHaveURL(/\/proposal$/)
+    await expect(page.getByRole('heading', { name: '策展企劃管理' })).toBeVisible()
 
-    // ----------------------------------------------------
-    // STEP 3: AI Theme Generation Flow
-    // ----------------------------------------------------
-    await page.click('.sidebar .ant-menu-item:has-text("AI 智慧發想")');
-    await expect(page.locator('.page-header h1')).toContainText('AI 智慧策展發想');
+    const titleInput = page.getByLabel('標題')
+    await expect(titleInput).not.toHaveValue('')
+    await titleInput.fill(`E2E 企劃 ${runId}`)
+    const updateResponse = page.waitForResponse((response) => (
+      /\/proposals\/[^/]+$/.test(new URL(response.url()).pathname) && response.request().method() === 'PUT'
+    ))
+    await page.getByRole('button', { name: '儲存' }).click()
+    expect((await updateResponse).status()).toBe(200)
 
-    // Fill parameters
-    await page.fill('textarea[placeholder="例如：科技、未來、創新"]', 'AI, 科技');
-    await page.fill('textarea[placeholder="例如：AI 快速發展、氣候變遷"]', 'AI 科技');
+    const matchResponse = page.waitForResponse((response) => (
+      response.url().endsWith('/match') && response.request().method() === 'POST'
+    ))
+    await page.getByRole('button', { name: '匹配館藏' }).click()
+    expect((await matchResponse).status()).toBe(200)
+    await expect(page.locator('.matched-book-list article').first()).toBeVisible({ timeout: 30_000 })
 
-    // Trigger AI generation (this will fallback to openrouter or gemini mockup)
-    // Since API key is invalid/mock, the call might fail. Let's see if the backend returns mock data or handles errors gracefully.
-    // If it fails with 502, we will catch it.
-    try {
-      await page.click('button:has-text("生成策展主題")');
-      // Wait for results
-      await page.waitForTimeout(3000);
-    } catch (e) {
-      console.log('Theme generation failed as expected due to mock API key: ', e.message);
-    }
-  });
-});
+    await page.evaluate(() => {
+      window.__lastDownloadAnchor = null
+      const originalClick = HTMLAnchorElement.prototype.click
+      HTMLAnchorElement.prototype.click = function click() {
+        window.__lastDownloadAnchor = {
+          filename: this.getAttribute('download'),
+          href: this.href,
+        }
+        return originalClick.call(this)
+      }
+    })
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'PDF' }).click()
+    const download = await downloadPromise
+    const downloadAnchor = await page.evaluate(() => window.__lastDownloadAnchor)
+    expect(downloadAnchor.filename).toMatch(/\.pdf$/)
+    expect(downloadAnchor.href).toMatch(/^blob:/)
+    expect(await download.createReadStream()).not.toBeNull()
+
+    await page.getByRole('button', { name: /\u7b56展後/ }).click()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByRole('heading', { name: '工時與成本效益' })).toBeVisible()
+    await expect(page.getByText('累計節省工時')).toBeVisible()
+
+    await page.getByRole('button', { name: '登出' }).click()
+    await expect(page).toHaveURL(/\/login$/)
+  })
+})

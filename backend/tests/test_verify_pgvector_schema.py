@@ -58,3 +58,15 @@ def test_validate_catalog_embeddings_reports_missing_or_invalid_embeddings():
         "catalog_books has no stored embeddings",
         "catalog_books has 2 embeddings with dimension other than 768",
     ]
+
+
+def test_validate_catalog_embeddings_reports_partially_missing_embeddings():
+    errors = validate_catalog_embeddings(
+        {
+            "total_count": 50,
+            "embedded_count": 42,
+            "invalid_dimension_count": 0,
+        }
+    )
+
+    assert errors == ["catalog_books has 8 rows without embeddings"]

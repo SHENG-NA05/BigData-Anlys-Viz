@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Progress, Upload, message } from 'antd'
 import {
   CheckCircle2,

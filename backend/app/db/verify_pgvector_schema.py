@@ -106,10 +106,16 @@ def get_catalog_embedding_state() -> dict[str, int]:
 
 def validate_catalog_embeddings(state: dict[str, int]) -> list[str]:
     errors = []
-    if state.get("total_count", 0) <= 0:
+    total_count = state.get("total_count", 0)
+    embedded_count = state.get("embedded_count", 0)
+    if total_count <= 0:
         errors.append("catalog_books has no rows")
-    if state.get("embedded_count", 0) <= 0:
+    if embedded_count <= 0:
         errors.append("catalog_books has no stored embeddings")
+    elif embedded_count < total_count:
+        errors.append(
+            f"catalog_books has {total_count - embedded_count} rows without embeddings"
+        )
     if state.get("invalid_dimension_count", 0) > 0:
         errors.append(
             f"catalog_books has {state['invalid_dimension_count']} embeddings "
