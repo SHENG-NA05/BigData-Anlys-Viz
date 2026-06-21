@@ -68,6 +68,18 @@
   font-weight: 850;
 }
 
+.login-card .login-demo-button {
+  margin-bottom: 12px;
+  border-color: #cdbb9f;
+  color: #765326;
+  font-weight: 750;
+}
+
+.login-card .login-demo-button:hover {
+  border-color: #9b7440;
+  color: #765326;
+}
+
 .login-divider {
   display: flex;
   align-items: center;

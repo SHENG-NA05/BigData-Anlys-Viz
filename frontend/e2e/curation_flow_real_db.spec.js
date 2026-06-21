@@ -7,8 +7,10 @@ test.describe('Smart Curation System real backend workflow', () => {
 
     await page.goto('/login')
     await expect(page.getByRole('heading', { name: '策展工作台登入' })).toBeVisible()
-    await page.getByPlaceholder('帳號 / Email').fill('demo_curator')
-    await page.getByPlaceholder('密碼').fill('demo-password-for-local-testing-only')
+    await page.getByRole('button', { name: '填入測試帳密' }).click()
+    await expect(page.getByPlaceholder('帳號 / Email')).toHaveValue('demo_curator')
+    await expect(page.getByPlaceholder('密碼')).toHaveValue('demo-password-for-local-testing-only')
+    await expect(page.getByPlaceholder('密碼')).toHaveAttribute('type', 'text')
     await page.getByRole('button', { name: '登入' }).click()
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
