@@ -228,6 +228,18 @@
     padding-left: 6px;
   }
 
+  .ra-side-section {
+    padding: 0 0 8px;
+  }
+
+  .ra-side-label {
+    display: none;
+  }
+
+  .ra-side-divider {
+    margin: 10px 6px;
+  }
+
   .ra-side-nav {
     padding: 0;
   }

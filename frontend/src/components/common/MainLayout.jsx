@@ -7,15 +7,15 @@ import './MainLayout.css'
 const { Content } = Layout
 
 const pageTitles = {
-  '/': '策展主題發想',
-  '/proposal': '策展內容整合',
-  '/dashboard': '策展成效洞察',
-  '/import': '館藏資料管理',
+  '/': '策展前｜AI 智慧策展發想',
+  '/proposal': '策展中｜企劃編輯與匯出',
+  '/dashboard': '策展後｜效益分析戰情室',
+  '/import': '資料工具｜館藏匯入',
 }
 
 const MainLayout = ({ children }) => {
   const location = useLocation()
-  const pageTitle = useMemo(() => pageTitles[location.pathname] || '策展主題發想', [location.pathname])
+  const pageTitle = useMemo(() => pageTitles[location.pathname] || pageTitles['/'], [location.pathname])
 
   return (
     <Layout className="ra-shell">

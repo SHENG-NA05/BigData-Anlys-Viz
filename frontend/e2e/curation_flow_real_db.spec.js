@@ -34,7 +34,7 @@ test.describe('Smart Curation System real backend workflow', () => {
     expect((await uploadResponse).status()).toBe(200)
     await expect(page.getByText(filename)).toBeVisible({ timeout: 30_000 })
 
-    await page.getByRole('button', { name: /主題發想/ }).click()
+    await page.getByRole('button', { name: /策展前/ }).click()
     await expect(page.getByRole('heading', { name: 'AI 主題生成' })).toBeVisible()
     await page.getByText('節慶策展', { exact: true }).click()
     await page.getByLabel('節慶或檔期').fill('世界閱讀日')
@@ -94,7 +94,7 @@ test.describe('Smart Curation System real backend workflow', () => {
     expect(downloadAnchor.href).toMatch(/^blob:/)
     expect(await download.createReadStream()).not.toBeNull()
 
-    await page.getByRole('button', { name: /成效儀表板/ }).click()
+    await page.getByRole('button', { name: /策展後/ }).click()
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByRole('heading', { name: '工時與成本效益' })).toBeVisible()
     await expect(page.getByText('累計節省工時')).toBeVisible()

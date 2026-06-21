@@ -6,12 +6,42 @@ import './Sidebar.css'
 
 const { Sider } = Layout
 
-const navigation = [
-  { path: '/', title: '主題發想', subtitle: 'AI 主題生成與館藏媒合', icon: Sparkles },
-  { path: '/proposal', title: '提案編輯', subtitle: '內容編輯、媒合與匯出', icon: BookOpen },
-  { path: '/dashboard', title: '成效儀表板', subtitle: '工時、成本與系統設定', icon: BarChart3 },
+const phaseNavigation = [
+  { path: '/', title: '策展前', subtitle: 'AI 主題發想與館藏媒合', icon: Sparkles },
+  { path: '/proposal', title: '策展中', subtitle: '企劃編輯、媒合與匯出', icon: BookOpen },
+  { path: '/dashboard', title: '策展後', subtitle: '效益分析與系統設定', icon: BarChart3 },
+]
+
+const toolNavigation = [
   { path: '/import', title: '館藏匯入', subtitle: '驗證並匯入館藏資料', icon: Database },
 ]
+
+const NavigationGroup = ({ label, items, currentPath, onNavigate }) => (
+  <section className="ra-side-section">
+    <div className="ra-side-label">{label}</div>
+    <nav className="ra-side-nav" aria-label={label}>
+      {items.map((item) => {
+        const Icon = item.icon
+        const active = currentPath === item.path
+        return (
+          <button
+            key={item.path}
+            className={active ? 'active' : ''}
+            aria-label={`${item.title}：${item.subtitle}`}
+            onClick={() => onNavigate(item.path)}
+          >
+            <Icon size={18} />
+            <span>
+              <strong>{item.title}</strong>
+              <small>{item.subtitle}</small>
+            </span>
+            <i />
+          </button>
+        )
+      })}
+    </nav>
+  </section>
+)
 
 const Sidebar = () => {
   const location = useLocation()
@@ -25,22 +55,19 @@ const Sidebar = () => {
       </div>
 
       <div className="ra-sidebar-scroll">
-        <nav className="ra-side-nav" aria-label="主要功能">
-          {navigation.map((item) => {
-            const Icon = item.icon
-            const active = location.pathname === item.path
-            return (
-              <button key={item.path} className={active ? 'active' : ''} onClick={() => navigate(item.path)}>
-                <Icon size={18} />
-                <span>
-                  <strong>{item.title}</strong>
-                  <small>{item.subtitle}</small>
-                </span>
-                <i />
-              </button>
-            )
-          })}
-        </nav>
+        <NavigationGroup
+          label="策展流程"
+          items={phaseNavigation}
+          currentPath={location.pathname}
+          onNavigate={navigate}
+        />
+        <div className="ra-side-divider" />
+        <NavigationGroup
+          label="資料工具"
+          items={toolNavigation}
+          currentPath={location.pathname}
+          onNavigate={navigate}
+        />
       </div>
 
       <div className="ra-sidebar-footer">
