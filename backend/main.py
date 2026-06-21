@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import curation, proposal, catalog, dashboard, auth
@@ -40,10 +40,11 @@ async def database_error_handler(request: Request, exc: SQLAlchemyError):
 
 # Include routers
 app.include_router(auth.router, prefix="/curation_management/backend", tags=["Auth"])
-app.include_router(curation.router, prefix="/curation_management/backend", tags=["Curation"])
-app.include_router(proposal.router, prefix="/curation_management/backend", tags=["Proposal"])
-app.include_router(catalog.router, prefix="/curation_management/backend", tags=["Catalog"])
-app.include_router(dashboard.router, prefix="/curation_management/backend", tags=["Dashboard"])
+protected = [Depends(auth.require_authenticated_user)]
+app.include_router(curation.router, prefix="/curation_management/backend", tags=["Curation"], dependencies=protected)
+app.include_router(proposal.router, prefix="/curation_management/backend", tags=["Proposal"], dependencies=protected)
+app.include_router(catalog.router, prefix="/curation_management/backend", tags=["Catalog"], dependencies=protected)
+app.include_router(dashboard.router, prefix="/curation_management/backend", tags=["Dashboard"], dependencies=protected)
 
 @app.get("/")
 def read_root():

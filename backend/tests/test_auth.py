@@ -1,6 +1,7 @@
 import pytest
 from fastapi import HTTPException
-from app.api.endpoints.auth import login, LoginRequest
+from fastapi.security import HTTPAuthorizationCredentials
+from app.api.endpoints.auth import login, LoginRequest, require_authenticated_user
 from app.db.models import User
 from app.core import security
 
@@ -54,18 +55,35 @@ def test_login_standard_failure_wrong_password():
     assert exc_info.value.status_code == 401
     assert "帳號或密碼錯誤" in exc_info.value.detail
 
-def test_login_sso_success_auto_registers_user():
-    db = FakeDb(user=None) # User doesn't exist initially
+def test_login_unknown_user_does_not_auto_register():
+    db = FakeDb(user=None)
 
-    request = LoginRequest(username="sso_user", sso_provider="google")
-    response = login(request, db=db)
+    request = LoginRequest(username="unknown", password="password")
+    with pytest.raises(HTTPException) as exc_info:
+        login(request, db=db)
 
-    assert db.committed is True
-    assert db.refreshed is True
-    assert len(db.added) == 1
-    assert db.added[0].username == "sso_user"
-    assert db.added[0].sso_provider == "google"
+    assert exc_info.value.status_code == 401
+    assert db.added == []
+    assert db.committed is False
 
-    assert response["status"] == "success"
-    assert "access_token" in response
-    assert response["username"] == "sso_user"
+def test_protected_route_rejects_missing_token():
+    with pytest.raises(HTTPException) as exc_info:
+        require_authenticated_user(credentials=None, db=FakeDb())
+
+    assert exc_info.value.status_code == 401
+
+def test_protected_route_rejects_invalid_token():
+    credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid")
+    with pytest.raises(HTTPException) as exc_info:
+        require_authenticated_user(credentials=credentials, db=FakeDb())
+
+    assert exc_info.value.status_code == 401
+
+def test_protected_route_accepts_valid_token_for_existing_user():
+    user = User(username="admin", hashed_password="hash", role="admin")
+    credentials = HTTPAuthorizationCredentials(
+        scheme="Bearer",
+        credentials=security.create_access_token({"sub": "admin", "role": "admin"}),
+    )
+
+    assert require_authenticated_user(credentials=credentials, db=FakeDb(user=user)) is user
