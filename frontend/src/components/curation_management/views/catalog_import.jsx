@@ -15,31 +15,29 @@ import './CatalogImport.css'
 
 const { Dragger } = Upload
 
-const demoHistory = [
-  { id: 1, fileName: 'future_catalog_sample.csv', status: 'success', recordsCount: 50, vectorizedCount: 50, uploadedAt: '2025/05/19 14:32' },
-  { id: 2, fileName: 'media_assets.xlsx', status: 'success', recordsCount: 128, vectorizedCount: 112, uploadedAt: '2025/05/18 16:10' },
-]
-
 const CatalogImport = () => {
-  const [history, setHistory] = useState(demoHistory)
+  const [history, setHistory] = useState([])
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
 
-  useEffect(() => {
-    const loadHistory = async () => {
+  const loadHistory = async (showSuccess = false) => {
+    try {
       const records = await catalogService.getUploadHistory()
-      if (Array.isArray(records) && records.length) {
-        setHistory(records.map((item, index) => ({
-          id: index,
-          fileName: item.source_file || item.fileName || `catalog-${index + 1}.csv`,
-          status: item.status || 'success',
-          recordsCount: item.records_count || item.recordsCount || 0,
-          vectorizedCount: item.vectorized_count || item.vectorizedCount || 0,
-          uploadedAt: item.imported_at ? new Date(item.imported_at).toLocaleString() : item.uploadedAt || '-',
-        })))
-      }
+      setHistory((records || []).map((item, index) => ({
+        id: `${item.source_file || 'catalog'}-${item.imported_at || index}`,
+        fileName: item.source_file || '-',
+        status: 'success',
+        recordsCount: item.records_count || 0,
+        vectorizedCount: item.vectorized_count || 0,
+        uploadedAt: item.imported_at ? new Date(item.imported_at).toLocaleString() : '-',
+      })))
+      if (showSuccess) message.success('已重新載入匯入紀錄')
+    } catch (error) {
+      message.error(error.response?.data?.detail || '無法讀取匯入紀錄')
     }
+  }
 
+  useEffect(() => {
     loadHistory()
   }, [])
 
@@ -73,8 +71,8 @@ const CatalogImport = () => {
     setProgress(15)
     try {
       const validation = await catalogService.validateFile(file)
-      if (validation.status === 'error') {
-        throw new Error(validation.detail)
+      if (!validation.valid) {
+        throw new Error(validation.errors?.join('；') || '檔案內容驗證失敗')
       }
 
       setProgress(45)
@@ -82,33 +80,11 @@ const CatalogImport = () => {
       setProgress(100)
 
       const importedCount = response.imported_count || response.records_count || 0
-      setHistory((current) => [
-        {
-          id: Date.now(),
-          fileName: file.name,
-          status: 'success',
-          recordsCount: importedCount,
-          vectorizedCount: response.vectorized_count || importedCount,
-          uploadedAt: new Date().toLocaleString(),
-        },
-        ...current,
-      ])
+      await loadHistory()
       message.success(`已匯入 ${importedCount} 筆資料`)
       onSuccess?.(response)
     } catch (error) {
-      setHistory((current) => [
-        {
-          id: Date.now(),
-          fileName: file.name,
-          status: 'error',
-          recordsCount: 0,
-          vectorizedCount: 0,
-          uploadedAt: new Date().toLocaleString(),
-          error: error.message,
-        },
-        ...current,
-      ])
-      message.error(error.message || '匯入失敗')
+      message.error(error.response?.data?.detail || error.message || '匯入失敗')
       onError?.(error)
     } finally {
       setTimeout(() => setProgress(0), 800)
@@ -186,14 +162,13 @@ const CatalogImport = () => {
             <li><strong>classification_no</strong> 分類號</li>
             <li><strong>summary</strong> 可供語意比對的摘要</li>
           </ul>
-          <button onClick={() => message.info('已檢查目前匯入欄位格式')}>檢查欄位格式</button>
         </article>
       </section>
 
       <section className="ra-panel history-panel">
         <div className="panel-title-row">
           <h2>匯入紀錄</h2>
-          <button onClick={() => message.info('已重新整理匯入紀錄')}>
+          <button onClick={() => loadHistory(true)}>
             <Search size={16} />
             重新整理
           </button>
@@ -215,6 +190,7 @@ const CatalogImport = () => {
               <span>{item.uploadedAt}</span>
             </div>
           ))}
+          {history.length === 0 && <p className="history-empty">尚無匯入紀錄</p>}
         </div>
       </section>
     </div>

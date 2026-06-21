@@ -20,7 +20,6 @@ describe('CatalogImport RA workspace', () => {
     HTMLAnchorElement.prototype.click = jest.fn()
     message.success = jest.fn()
     message.error = jest.fn()
-    message.info = jest.fn()
   })
 
   test('renders data import page', async () => {
@@ -44,11 +43,4 @@ describe('CatalogImport RA workspace', () => {
     expect(message.success).toHaveBeenCalledWith('已下載範本')
   })
 
-  test('shows local format check feedback', () => {
-    render(<CatalogImport />)
-
-    fireEvent.click(screen.getByRole('button', { name: /檢查欄位格式/ }))
-
-    expect(message.info).toHaveBeenCalledWith('已檢查目前匯入欄位格式')
-  })
 })

@@ -6,52 +6,61 @@ import { dashboardService } from '../services/dashboardService'
 
 jest.mock('recharts', () => {
   const original = jest.requireActual('recharts')
-  return {
-    ...original,
-    ResponsiveContainer: ({ children }) => <div>{children}</div>,
-  }
+  return { ...original, ResponsiveContainer: ({ children }) => <div>{children}</div> }
 })
 
 jest.mock('../services/dashboardService', () => ({
   dashboardService: {
-    getDashboardStats: jest.fn().mockResolvedValue({ proposal_export_count: 12.3 }),
+    getDashboardStats: jest.fn(),
+    getMonthlyStats: jest.fn(),
+    getQuarterlyStats: jest.fn(),
+    getSettings: jest.fn(),
+    updateSettings: jest.fn(),
   },
 }))
 
-describe('DashboardView RA workspace', () => {
+describe('DashboardView API integration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    window.URL.createObjectURL = jest.fn(() => 'blob:mock-url')
-    window.URL.revokeObjectURL = jest.fn()
-    HTMLAnchorElement.prototype.click = jest.fn()
-    message.success = jest.fn()
-  })
-
-  test('renders analytics dashboard', async () => {
-    render(<DashboardView />)
-
-    expect(screen.getByRole('heading', { name: '策展成效分析與洞察' })).toBeInTheDocument()
-    expect(screen.getAllByText('總參觀人次').length).toBeGreaterThan(0)
-    expect(screen.getByText('觀眾來源與輪廓')).toBeInTheDocument()
-
-    await waitFor(() => {
-      expect(dashboardService.getDashboardStats).toHaveBeenCalledWith('quarter')
+    dashboardService.getDashboardStats.mockResolvedValue({
+      cumulative_hours_saved: 18,
+      cumulative_cost_saved: 3600,
+      theme_generation_count: 5,
+      proposal_export_count: 3,
     })
+    dashboardService.getMonthlyStats.mockResolvedValue([{ month: '2026-06', hours: 18, cost: 3600 }])
+    dashboardService.getQuarterlyStats.mockResolvedValue([{ quarter: '2026-Q2', hours: 18, cost: 3600 }])
+    dashboardService.getSettings.mockResolvedValue({ hourly_rate: 200, base_hours: 8 })
+    dashboardService.updateSettings.mockResolvedValue({ status: 'success' })
+    message.success = jest.fn()
+    message.error = jest.fn()
   })
 
-  test('exports report from hero action', () => {
+  test('renders only backend-supported metrics', async () => {
     render(<DashboardView />)
 
-    fireEvent.click(screen.getByRole('button', { name: /匯出報表/ }))
-
-    expect(window.URL.createObjectURL).toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: '工時與成本效益' })).toBeInTheDocument()
+    expect(await screen.findByText('18 小時')).toBeInTheDocument()
+    expect(screen.getByText('NT$ 3,600')).toBeInTheDocument()
+    expect(screen.queryByText('觀眾來源與輪廓')).not.toBeInTheDocument()
+    expect(dashboardService.getDashboardStats).toHaveBeenCalled()
   })
 
-  test('creates next exhibition draft', () => {
+  test('updates calculation settings through the backend', async () => {
+    render(<DashboardView />)
+    const rateInput = await screen.findByLabelText('平均時薪 (NT$)')
+    fireEvent.change(rateInput, { target: { value: '250' } })
+    fireEvent.click(screen.getByRole('button', { name: '儲存參數' }))
+
+    await waitFor(() => expect(dashboardService.updateSettings).toHaveBeenCalledWith(250, 8))
+    expect(message.success).toHaveBeenCalledWith('系統參數已儲存')
+  })
+
+  test('does not render seeded metrics when the API fails', async () => {
+    dashboardService.getDashboardStats.mockRejectedValue(new Error('database unavailable'))
     render(<DashboardView />)
 
-    fireEvent.click(screen.getByRole('button', { name: /生成再策展企劃草案/ }))
-
-    expect(message.success).toHaveBeenCalledWith('已產生再策展企劃草案')
+    await waitFor(() => expect(message.error).toHaveBeenCalledWith('database unavailable'))
+    expect(screen.queryByText('128,457')).not.toBeInTheDocument()
   })
 })
