@@ -36,8 +36,7 @@ const LoginView = () => {
     <div className="login-view-container">
       <section className="login-card">
         <div className="login-brand">
-          <span>R</span>
-          <strong>RA2</strong>
+          <strong>智慧策展分析系統</strong>
         </div>
         <div className="login-header">
           <h1>策展工作台登入</h1>

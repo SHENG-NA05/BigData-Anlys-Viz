@@ -50,8 +50,7 @@ const Sidebar = () => {
   return (
     <Sider width={292} className="ra-sidebar">
       <div className="ra-brand" onClick={() => navigate('/')} role="button" tabIndex={0}>
-        <span className="ra-brand-mark">R</span>
-        <span>RA2</span>
+        <span>智慧策展分析系統</span>
       </div>
 
       <div className="ra-sidebar-scroll">
